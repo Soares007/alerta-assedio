@@ -73,6 +73,18 @@
     <header>
         <h1 style="color: white;">Sistema de Denúncias</h1>
         <p>Canal seguro para registro e acompanhamento</p>
+
+        <div style="margin-top: 10px;">
+            {% if user.is_authenticated %}
+            <span>Olá, {{ user.username }}</span> |
+            <form action="/logout/" method="post" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" style="background: none; border: none; color: white; cursor: pointer; padding: 0;">
+                    Sair
+                </button>
+            </form>
+            {% endif %}
+        </div>
     </header>
 
     <main>
