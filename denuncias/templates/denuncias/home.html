@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h2>Bem-vindo ao Sistema de Denúncias</h2>
+
+<p>
+    Este sistema foi criado para registrar, acompanhar e analisar denúncias
+    relacionadas ao ambiente de trabalho, com foco em segurança, sigilo e organização.
+</p>
+
+<br>
+
+{% if user.is_authenticated %}
+
+    <p>Você está logado como <strong>{{ user.username }}</strong>.</p>
+
+
+{% else %}
+
+    <p>Faça login para registrar ou acompanhar suas denúncias.</p>
+
+    <a href="/login/">
+        <button>Entrar no sistema</button>
+    </a>
+
+{% endif %}
+
+{% endblock %}
