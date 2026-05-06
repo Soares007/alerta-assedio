@@ -121,6 +121,7 @@
         <a href="/minhas-denuncias/">Minhas denúncias</a>
 
         {% if ui_rh or ui_admin %}
+        <a href="/painel-rh/">Painel RH</a>
         <a href="/todas-denuncias/">Todas as denúncias</a>
         {% endif %}
         {% else %}
@@ -132,6 +133,25 @@
     <main>
 
         <div class="topbar">
+            {% if messages %}
+
+            {% for message in messages %}
+
+            <div style="
+            background:#dcfce7;
+            color:#166534;
+            padding:15px;
+            border-radius:8px;
+            margin-bottom:20px;
+        ">
+
+                {{ message }}
+
+            </div>
+
+            {% endfor %}
+
+            {% endif %}
 
             <div>
                 <h2>Painel do Sistema</h2>

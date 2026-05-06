@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h2>Painel do RH</h2>
+
+<div style="display:grid; grid-template-columns: 1fr 2fr; gap:20px;">
+
+    <div>
+        <h3>Denúncias</h3>
+
+        {% for d in denuncias %}
+            <a href="/painel-rh/{{ d.id }}/" style="
+                display:block;
+                padding:12px;
+                margin-bottom:10px;
+                border:1px solid #ddd;
+                border-radius:8px;
+                text-decoration:none;
+                color:#111827;
+                background:#f9fafb;
+            ">
+                <strong>{{ d.get_tipo_display }}</strong><br>
+                Status: {{ d.get_status_display }}<br>
+                Data: {{ d.data_criacao|date:"d/m/Y H:i" }}
+            </a>
+        {% empty %}
+            <p>Nenhuma denúncia encontrada.</p>
+        {% endfor %}
+    </div>
+
+    <div>
+        {% if denuncia_selecionada %}
+            <h3>Detalhes da denúncia</h3>
+
+            <p>
+                <strong>Usuário:</strong>
+                {% if denuncia_selecionada.anonima %}
+                    Anônimo
+                {% else %}
+                    {{ denuncia_selecionada.usuario.username }}
+                {% endif %}
+            </p>
+
+            <p><strong>Tipo:</strong> {{ denuncia_selecionada.get_tipo_display }}</p>
+            <p><strong>Status:</strong> {{ denuncia_selecionada.get_status_display }}</p>
+            <p><strong>Data:</strong> {{ denuncia_selecionada.data_criacao|date:"d/m/Y H:i" }}</p>
+
+            <p>
+                <strong>Descrição:</strong><br>
+                {{ denuncia_selecionada.descricao }}
+            </p>
+
+            <hr style="margin:20px 0;">
+
+            <h3>Responder denúncia</h3>
+
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+
+                <button type="submit">Salvar resposta</button>
+            </form>
+
+        {% else %}
+            <p>Selecione uma denúncia ao lado para visualizar e responder.</p>
+        {% endif %}
+    </div>
+
+</div>
+
+{% endblock %}

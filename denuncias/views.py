@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from .forms import DenunciaForm
+from .forms import DenunciaForm, RespostaDenunciaForm
 from .models import Denuncia
+from django.contrib import messages
 
 @login_required
 @login_required
@@ -79,3 +80,40 @@ def sucesso(request):
 
 def home(request):
     return render(request, 'denuncias/home.html')
+
+@login_required
+def painel_rh(request, denuncia_id=None):
+    eh_rh = request.user.groups.filter(name='RH').exists()
+    eh_admin = request.user.groups.filter(name='Administrador').exists()
+    eh_superuser = request.user.is_superuser
+
+    if not (eh_rh or eh_admin or eh_superuser):
+        return redirect('home')
+
+    denuncias = Denuncia.objects.all().order_by('-data_criacao')
+    denuncia_selecionada = None
+    form = None
+
+    if denuncia_id:
+        denuncia_selecionada = Denuncia.objects.get(id=denuncia_id)
+
+        if request.method == 'POST':
+            form = RespostaDenunciaForm(request.POST, instance=denuncia_selecionada)
+
+            if form.is_valid():
+                form.save()
+
+                messages.success(request, 'Resposta enviada com sucesso!')
+
+                return redirect(
+                    'painel_rh_detalhe',
+                    denuncia_id=denuncia_selecionada.id
+                )
+        else:
+            form = RespostaDenunciaForm(instance=denuncia_selecionada)
+
+    return render(request, 'denuncias/painel_rh.html', {
+        'denuncias': denuncias,
+        'denuncia_selecionada': denuncia_selecionada,
+        'form': form,
+    })
