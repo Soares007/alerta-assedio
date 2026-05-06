@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Minhas denúncias</h2>
+
+{% if denuncias %}
+<ul>
+    {% for d in denuncias %}
+    <li>
+        <strong>{{ d.get_tipo_display }}</strong> -
+        {{ d.get_status_display }} -
+        {{ d.data_criacao|date:"d/m/Y H:i" }}
+    </li>
+    {% endfor %}
+</ul>
+
+{% else %}
+<p>Você ainda não fez nenhuma denúncia.</p>
+{% endif %}
+{% endblock %}
