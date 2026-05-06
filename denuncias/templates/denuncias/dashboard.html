@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+    <div style="background:#2563eb; color:white; padding:20px; border-radius:10px;">
+        <h3>Total de denúncias</h3>
+        <p style="font-size:30px;">{{ total }}</p>
+    </div>
+
+    <div style="background:#dc2626; color:white; padding:20px; border-radius:10px;">
+        <h3>Assédio Moral</h3>
+        <p style="font-size:30px;">{{ moral }}</p>
+    </div>
+
+    <div style="background:#9333ea; color:white; padding:20px; border-radius:10px;">
+        <h3>Assédio Sexual</h3>
+        <p style="font-size:30px;">{{ sexual }}</p>
+    </div>
+
+    <div style="background:#ea580c; color:white; padding:20px; border-radius:10px;">
+        <h3>Abuso de Poder</h3>
+        <p style="font-size:30px;">{{ abuso }}</p>
+    </div>
+
+</div>
+
+<hr style="margin: 30px 0;">
+
+<h3>Status das denúncias</h3>
+
+<ul>
+    <li>Recebidas: {{ recebidas }}</li>
+    <li>Em análise: {{ analise }}</li>
+    <li>Resolvidas: {{ resolvidas }}</li>
+</ul>
+
+{% endblock %}
