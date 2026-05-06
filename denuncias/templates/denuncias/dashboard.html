@@ -35,4 +35,29 @@
     <li>Resolvidas: {{ resolvidas }}</li>
 </ul>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<h3>Gráfico por tipo de denúncia</h3>
+
+<canvas id="graficoTipos"></canvas>
+
+<script>
+    const moral = Number("{{ moral }}");
+    const sexual = Number("{{ sexual }}");
+    const abuso = Number("{{ abuso }}");
+
+    const ctx = document.getElementById('graficoTipos')
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Assédio Moral', "Assédio Sexual", "Abuso de Poder"],
+            datasets: [{
+                label: 'Quantidade',
+                 data: [moral, sexual, abuso]
+            }]
+        }
+    });
+</script>
+
 {% endblock %}
