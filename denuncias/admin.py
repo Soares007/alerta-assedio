@@ -17,6 +17,9 @@ class DenunciaAdmin(admin.ModelAdmin):
          {
              'fields': ('usuario', 'status')
          }),
+        ('Resposta RH', {
+             'fields': ('resposta_rh',)
+         }),
          ('Datas', {
              'fields': ('data_criacao',)
          }),

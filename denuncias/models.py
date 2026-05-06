@@ -25,6 +25,8 @@ class Denuncia(models.Model):
     anonima = models.BooleanField(default=False)
     status = models.CharField(max_length=20, choices=STATUS, default='recebida')
     data_criacao = models.DateTimeField(auto_now_add=True)
+    resposta_rh = models.TextField(blank=True, null=True)
 
     def _str_(self):
         return f"{self.get_tipo_display()} - {self.get_status_display()}"
+
