@@ -232,6 +232,36 @@
             color: #6b7280;
             font-size: 14px;
         }
+
+        .bell-shake {
+            animation: bellShake 0.5s ease;
+        }
+
+        @keyframes bellShake {
+            0% {
+                transform: rotate(0);
+            }
+
+            20% {
+                transform: rotate(-15deg);
+            }
+
+            40% {
+                transform: rotate(15deg);
+            }
+
+            60% {
+                transform: rotate(-10deg);
+            }
+
+            80% {
+                transform: rotate(10deg);
+            }
+
+            100% {
+                transform: rotate(0);
+            }
+        }
     </style>
 
 </head>
@@ -386,61 +416,170 @@
 
     </main>
 
+    <audio id="notificationSound">
+        <source src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" type="audio/ogg">
+    </audio>
+
     <script>
-    function getCookie(name) {
-        let cookieValue = null;
+        let usuarioInteragiu = false;
 
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
+        document.addEventListener('click', function () {
+            usuarioInteragiu = true;
+        });
 
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
+        function getCookie(name) {
+            let cookieValue = null;
 
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+
+            return cookieValue;
+        }
+
+        function tocarSomNotificacao() {
+            const sound = document.getElementById('notificationSound');
+
+            if (sound && usuarioInteragiu) {
+                sound.currentTime = 0;
+                sound.volume = 0.4;
+
+                sound.play().catch(() => {
+                    console.log('Som bloqueado pelo navegador.');
+                });
+
+                setTimeout(() => {
+                    sound.pause();
+                    sound.currentTime = 0;
+                }, 1000);
+            }
+        }
+
+        function animarSino() {
+            const bell = document.querySelector('.notification-bell');
+
+            if (bell) {
+                bell.classList.add('bell-shake');
+
+                setTimeout(() => {
+                    bell.classList.remove('bell-shake');
+                }, 600);
+            }
+        }
+
+        function atualizarBadge(total) {
+            const badge = document.querySelector('.notification-count');
+            const bell = document.querySelector('.notification-bell');
+
+            if (!bell) return;
+
+            if (total > 0) {
+                if (badge) {
+                    badge.innerText = total;
+                } else {
+                    const span = document.createElement('span');
+                    span.className = 'notification-count';
+                    span.innerText = total;
+                    bell.appendChild(span);
+                }
+            } else {
+                if (badge) {
+                    badge.remove();
                 }
             }
         }
 
-        return cookieValue;
-    }
+        function adicionarNotificacaoNoCard(data) {
+            const card = document.getElementById('notificationCard');
 
-    function toggleNotifications() {
-        const card = document.getElementById('notificationCard');
-        const badge = document.querySelector('.notification-count');
+            if (!card) return;
 
-        if (card) {
-            card.classList.toggle('active');
+            const nova = `
+            <div class="notification-item">
+                <div class="notification-title">${data.titulo}</div>
+                <div class="notification-message">${data.mensagem}</div>
+            </div>
+        `;
 
-            fetch('/notificacoes/marcar-lidas/', {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'ok' && badge) {
-                    badge.remove();
-                }
-            });
+            const vazio = card.querySelector('.notification-empty');
+
+            if (vazio) {
+                card.innerHTML = "<h3>Notificações</h3>" + nova;
+            } else {
+                card.innerHTML = "<h3>Notificações</h3>" + nova + card.innerHTML.replace("<h3>Notificações</h3>", "");
+            }
         }
-    }
 
-    document.addEventListener('click', function(event) {
-        const wrapper = document.querySelector('.notification-wrapper');
-
-        if (wrapper && !wrapper.contains(event.target)) {
+        function toggleNotifications() {
             const card = document.getElementById('notificationCard');
 
             if (card) {
-                card.classList.remove('active');
+                card.classList.toggle('active');
+
+                fetch('/notificacoes/marcar-lidas/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'ok') {
+                            atualizarBadge(0);
+                        }
+                    });
             }
         }
-    });
-</script>
+
+        const protocolo = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+
+        const socket = new WebSocket(
+            protocolo + window.location.host + '/ws/notificacoes/'
+        );
+
+        socket.onmessage = function (e) {
+            const data = JSON.parse(e.data);
+
+            tocarSomNotificacao();
+            animarSino();
+
+            const badge = document.querySelector('.notification-count');
+            const totalAtual = badge ? parseInt(badge.innerText) : 0;
+
+            atualizarBadge(totalAtual + 1);
+            adicionarNotificacaoNoCard(data);
+        };
+
+        socket.onerror = function (e) {
+            console.error('Erro no WebSocket', e);
+        };
+
+        socket.onclose = function () {
+            console.log('WebSocket fechado');
+        };
+
+        document.addEventListener('click', function (event) {
+            const wrapper = document.querySelector('.notification-wrapper');
+
+            if (wrapper && !wrapper.contains(event.target)) {
+                const card = document.getElementById('notificationCard');
+
+                if (card) {
+                    card.classList.remove('active');
+                }
+            }
+        });
+    </script>
 
 </body>
 
