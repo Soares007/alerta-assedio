@@ -5,7 +5,8 @@ from .models import Denuncia, Notificacao
 from django.contrib import messages
 from django.http import JsonResponse
 from django.core.mail import send_mail, EmailMultiAlternatives
-
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 def enviar_email_html(assunto, mensagem_texto, mensagem_html, destinatarios):
     email = EmailMultiAlternatives(
@@ -139,6 +140,16 @@ def painel_rh(request, denuncia_id=None):
                     mensagem='Sua denúncia recebeu uma resposta ou atualização de status'
                 )
                 
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    f"user_{denuncia_atualizada.usuario.id}",
+                    {
+                        "type": "enviar_notificacao",
+                        "titulo": "Nova resposat do RH",
+                        "mensagem": "Sua denúncia recebeu uma atualização",
+                    }
+                )
+                
                 if denuncia_atualizada.usuario.email:
                   enviar_email_html(
         assunto='Sua denúncia recebeu uma atualização',
@@ -197,4 +208,29 @@ def marcar_notificacoes_lidas(request):
 
     return JsonResponse({
         'status': 'erro'
+    })
+    
+@login_required
+def api_notificacoes(request):
+    notificacoes = Notificacao.objects.filter(
+        usuario=request.user
+    ).order_by('-data_criacao')[:5]
+
+    data = []
+
+    for n in notificacoes:
+        data.append({
+            'titulo': n.titulo,
+            'mensagem': n.mensagem,
+            'data': n.data_criacao.strftime('%d/%m/%Y %H:%M'),
+        })
+
+    total_nao_lidas = Notificacao.objects.filter(
+        usuario=request.user,
+        lida=False
+    ).count()
+
+    return JsonResponse({
+        'notificacoes': data,
+        'total_nao_lidas': total_nao_lidas
     })
