@@ -29,4 +29,15 @@ class Denuncia(models.Model):
 
     def _str_(self):
         return f"{self.get_tipo_display()} - {self.get_status_display()}"
+    
+class Notificacao(models.Model):
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    titulo = models.CharField(max_length=100)
+    mensagem = models.TextField()
+    lida = models.BooleanField(default=False)
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    
+    
+    def _str_(self):
+        return self.titulo
 
