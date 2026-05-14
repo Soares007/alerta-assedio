@@ -5,9 +5,42 @@
 <h2>Painel do RH</h2>
 
 <style>
+    .kanban-cards {
+    min-height: 380px;
+}
+    .filtros-topo {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.limpar-filtros {
+    font-size: 13px;
+    color: #6b7280;
+    text-decoration: none;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: 0.2s;
+}
+
+.limpar-filtros:hover {
+    background: #f3f4f6;
+    color: #111827;
+}
+    .filtros-rh {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 12px;
+        margin-bottom: 24px;
+        background: #f9fafb;
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+    }
+
     .kanban-layout {
         display: grid;
-        grid-template-columns: 1.4fr 1fr;
+        grid-template-columns: 1.5fr 1fr;
         gap: 24px;
     }
 
@@ -23,12 +56,6 @@
         border-radius: 14px;
         padding: 14px;
         min-height: 500px;
-    }
-
-    .kanban-column h3 {
-        margin-bottom: 14px;
-        font-size: 16px;
-        color: #111827;
     }
 
     .kanban-card {
@@ -93,15 +120,6 @@
         min-height: 500px;
     }
 
-    .detalhes-box h3 {
-        margin-bottom: 14px;
-    }
-
-    .detalhes-info {
-        margin-bottom: 12px;
-        color: #374151;
-    }
-
     .descricao-box {
         background: #f9fafb;
         border-radius: 10px;
@@ -116,7 +134,26 @@
         margin-top: 10px;
     }
 
-    @media (max-width: 1100px) {
+    .paginacao {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        margin-top: 12px;
+        font-size: 13px;
+    }
+
+    .paginacao a {
+        text-decoration: none;
+        color: #2563eb;
+        font-weight: bold;
+    }
+
+    @media (max-width: 1200px) {
+        .filtros-rh {
+            grid-template-columns: 1fr 1fr;
+        }
+
         .kanban-layout {
             grid-template-columns: 1fr;
         }
@@ -127,20 +164,75 @@
     }
 </style>
 
+<form method="get" class="filtros-rh">
+    <div>
+        <label>Tipo</label>
+        <select name="tipo">
+            <option value="">Todos</option>
+            <option value="moral" {% if tipo_filtro == 'moral' %}selected{% endif %}>Assédio Moral</option>
+            <option value="sexual" {% if tipo_filtro == 'sexual' %}selected{% endif %}>Assédio Sexual</option>
+            <option value="abuso" {% if tipo_filtro == 'abuso' %}selected{% endif %}>Abuso de Poder</option>
+        </select>
+    </div>
+
+    <div>
+        <label>Anonimato</label>
+        <select name="anonima">
+            <option value="">Todos</option>
+            <option value="sim" {% if anonima_filtro == 'sim' %}selected{% endif %}>Anônimas</option>
+            <option value="nao" {% if anonima_filtro == 'nao' %}selected{% endif %}>Identificadas</option>
+        </select>
+    </div>
+
+    <div>
+        <label>Data inicial</label>
+        <input type="date" name="data_inicio" value="{{ data_inicio|default:'' }}">
+    </div>
+
+    <div>
+        <label>Data final</label>
+        <input type="date" name="data_fim" value="{{ data_fim|default:'' }}">
+    </div>
+
+    <div>
+        <label>Ordem</label>
+        <select name="ordem">
+            <option value="recentes" {% if ordem == 'recentes' %}selected{% endif %}>Mais recentes</option>
+            <option value="antigas" {% if ordem == 'antigas' %}selected{% endif %}>Mais antigas</option>
+        </select>
+    </div>
+
+    <div>
+        <label>Limite</label>
+        <select name="limite">
+            <option value="5" {% if limite == 5 %}selected{% endif %}>5 por coluna</option>
+            <option value="10" {% if limite == 10 %}selected{% endif %}>10 por coluna</option>
+            <option value="20" {% if limite == 20 %}selected{% endif %}>20 por coluna</option>
+        </select>
+    </div>
+
+    <div class="filtros-topo">
+    <a href="/painel-rh/" class="limpar-filtros">
+        Limpar filtros
+    </a>
+</div>
+</form>
+
 <div class="kanban-layout">
 
     <div class="kanban-board">
 
-        <div class="kanban-column">
-            <h3>Recebidas ({{ denuncias_recebidas|length }})</h3>
+        <div class="kanban-column"
+     data-status="recebida">
+            <h3>Recebidas ({{ denuncias_recebidas.paginator.count }})</h3>
 
+            <div class="kanban-cards">
             {% for d in denuncias_recebidas %}
-            <a href="/painel-rh/{{ d.id }}/" class="kanban-card card-recebida">
+            <a href="/painel-rh/{{ d.id }}/"
+   draggable="true"
+   data-id="{{ d.id }}" class="kanban-card card-recebida">
                 <strong>{{ d.get_tipo_display }}</strong>
-
-                <div class="kanban-meta">
-                    {{ d.data_criacao|date:"d/m/Y H:i" }}
-                </div>
+                <div class="kanban-meta">{{ d.data_criacao|date:"d/m/Y H:i" }}</div>
 
                 {% if d.anonima %}
                 <span class="badge badge-anonima">Anônima</span>
@@ -151,18 +243,40 @@
             {% empty %}
             <p class="empty-column">Nenhuma denúncia recebida.</p>
             {% endfor %}
+            </div>
+            <div class="paginacao">
+                {% if denuncias_recebidas.has_previous %}
+                <a
+                    href="?page_recebidas={{ denuncias_recebidas.previous_page_number }}&tipo={{ tipo_filtro|default:'' }}&anonima={{ anonima_filtro|default:'' }}&data_inicio={{ data_inicio|default:'' }}&data_fim={{ data_fim|default:'' }}&ordem={{ ordem }}&limite={{ limite }}">←
+                    Anterior</a>
+                {% else %}
+                <span></span>
+                {% endif %}
+
+                <span>{{ denuncias_recebidas.number }}/{{ denuncias_recebidas.paginator.num_pages }}</span>
+
+                {% if denuncias_recebidas.has_next %}
+                <a
+                    href="?page_recebidas={{ denuncias_recebidas.next_page_number }}&tipo={{ tipo_filtro|default:'' }}&anonima={{ anonima_filtro|default:'' }}&data_inicio={{ data_inicio|default:'' }}&data_fim={{ data_fim|default:'' }}&ordem={{ ordem }}&limite={{ limite }}">Próxima
+                    →</a>
+                {% else %}
+                <span></span>
+                {% endif %}
+            </div>
         </div>
 
-        <div class="kanban-column">
-            <h3>Em análise ({{ denuncias_analise|length }})</h3>
+        <div class="kanban-column"
+     data-status="analise">
+            <h3>Em análise ({{ denuncias_analise.paginator.count }})</h3>
+
+            <div class="kanban-cards">
 
             {% for d in denuncias_analise %}
-            <a href="/painel-rh/{{ d.id }}/" class="kanban-card card-analise">
+           <a href="/painel-rh/{{ d.id }}/"
+   draggable="true"
+   data-id="{{ d.id }}" class="kanban-card card-analise">
                 <strong>{{ d.get_tipo_display }}</strong>
-
-                <div class="kanban-meta">
-                    {{ d.data_criacao|date:"d/m/Y H:i" }}
-                </div>
+                <div class="kanban-meta">{{ d.data_criacao|date:"d/m/Y H:i" }}</div>
 
                 {% if d.anonima %}
                 <span class="badge badge-anonima">Anônima</span>
@@ -173,18 +287,39 @@
             {% empty %}
             <p class="empty-column">Nenhuma denúncia em análise.</p>
             {% endfor %}
+           </div>
+            <div class="paginacao">
+                {% if denuncias_analise.has_previous %}
+                <a
+                    href="?page_analise={{ denuncias_analise.previous_page_number }}&tipo={{ tipo_filtro|default:'' }}&anonima={{ anonima_filtro|default:'' }}&data_inicio={{ data_inicio|default:'' }}&data_fim={{ data_fim|default:'' }}&ordem={{ ordem }}&limite={{ limite }}">←
+                    Anterior</a>
+                {% else %}
+                <span></span>
+                {% endif %}
+
+                <span>{{ denuncias_analise.number }}/{{ denuncias_analise.paginator.num_pages }}</span>
+
+                {% if denuncias_analise.has_next %}
+                <a
+                    href="?page_analise={{ denuncias_analise.next_page_number }}&tipo={{ tipo_filtro|default:'' }}&anonima={{ anonima_filtro|default:'' }}&data_inicio={{ data_inicio|default:'' }}&data_fim={{ data_fim|default:'' }}&ordem={{ ordem }}&limite={{ limite }}">Próxima
+                    →</a>
+                {% else %}
+                <span></span>
+                {% endif %}
+            </div>
         </div>
 
-        <div class="kanban-column">
-            <h3>Resolvidas ({{ denuncias_resolvidas|length }})</h3>
+        <div class="kanban-column"
+     data-status="resolvida">
+            <h3>Resolvidas ({{ denuncias_resolvidas.paginator.count }})</h3>
+            <div class="kanban-cards">
 
             {% for d in denuncias_resolvidas %}
-            <a href="/painel-rh/{{ d.id }}/" class="kanban-card card-resolvida">
+           <a href="/painel-rh/{{ d.id }}/"
+   draggable="true"
+   data-id="{{ d.id }}" class="kanban-card card-resolvida">
                 <strong>{{ d.get_tipo_display }}</strong>
-
-                <div class="kanban-meta">
-                    {{ d.data_criacao|date:"d/m/Y H:i" }}
-                </div>
+                <div class="kanban-meta">{{ d.data_criacao|date:"d/m/Y H:i" }}</div>
 
                 {% if d.anonima %}
                 <span class="badge badge-anonima">Anônima</span>
@@ -196,6 +331,26 @@
             <p class="empty-column">Nenhuma denúncia resolvida.</p>
             {% endfor %}
         </div>
+            <div class="paginacao">
+                {% if denuncias_resolvidas.has_previous %}
+                <a
+                    href="?page_resolvidas={{ denuncias_resolvidas.previous_page_number }}&tipo={{ tipo_filtro|default:'' }}&anonima={{ anonima_filtro|default:'' }}&data_inicio={{ data_inicio|default:'' }}&data_fim={{ data_fim|default:'' }}&ordem={{ ordem }}&limite={{ limite }}">←
+                    Anterior</a>
+                {% else %}
+                <span></span>
+                {% endif %}
+
+                <span>{{ denuncias_resolvidas.number }}/{{ denuncias_resolvidas.paginator.num_pages }}</span>
+
+                {% if denuncias_resolvidas.has_next %}
+                <a
+                    href="?page_resolvidas={{ denuncias_resolvidas.next_page_number }}&tipo={{ tipo_filtro|default:'' }}&anonima={{ anonima_filtro|default:'' }}&data_inicio={{ data_inicio|default:'' }}&data_fim={{ data_fim|default:'' }}&ordem={{ ordem }}&limite={{ limite }}">Próxima
+                    →</a>
+                {% else %}
+                <span></span>
+                {% endif %}
+            </div>
+        </div>
 
     </div>
 
@@ -203,8 +358,7 @@
         {% if denuncia_selecionada %}
         <h3>Detalhes da denúncia</h3>
 
-        <p class="detalhes-info">
-            <strong>Usuário:</strong>
+        <p><strong>Usuário:</strong>
             {% if denuncia_selecionada.anonima %}
             Anônimo
             {% else %}
@@ -212,23 +366,11 @@
             {% endif %}
         </p>
 
-        <p class="detalhes-info">
-            <strong>Tipo:</strong>
-            {{ denuncia_selecionada.get_tipo_display }}
-        </p>
-
-        <p class="detalhes-info">
-            <strong>Status:</strong>
-            {{ denuncia_selecionada.get_status_display }}
-        </p>
-
-        <p class="detalhes-info">
-            <strong>Data:</strong>
-            {{ denuncia_selecionada.data_criacao|date:"d/m/Y H:i" }}
-        </p>
+        <p><strong>Tipo:</strong> {{ denuncia_selecionada.get_tipo_display }}</p>
+        <p><strong>Status:</strong> {{ denuncia_selecionada.get_status_display }}</p>
+        <p><strong>Data:</strong> {{ denuncia_selecionada.data_criacao|date:"d/m/Y H:i" }}</p>
 
         <strong>Descrição:</strong>
-
         <div class="descricao-box">
             {{ denuncia_selecionada.descricao }}
         </div>
@@ -238,17 +380,100 @@
         <form method="post">
             {% csrf_token %}
             {{ form.as_p }}
-
             <button type="submit">Salvar resposta</button>
         </form>
         {% else %}
         <h3>Selecione uma denúncia</h3>
-        <p class="empty-column">
-            Clique em um card do quadro para visualizar os detalhes e responder.
-        </p>
+        <p class="empty-column">Clique em um card para visualizar e responder.</p>
         {% endif %}
     </div>
 
 </div>
+
+<script>
+    const filtrosForm = document.querySelector('.filtros-rh');
+
+    if (filtrosForm) {
+        const campos = filtrosForm.querySelectorAll('select, input[type="date"]');
+
+        campos.forEach(campo => {
+            campo.addEventListener('change', () => {
+                filtrosForm.submit();
+            });
+        });
+    }
+
+    let cardArrastado = null;
+
+    function atualizarCorCard(card, novoStatus) {
+        card.classList.remove('card-recebida', 'card-analise', 'card-resolvida');
+
+        if (novoStatus === 'recebida') {
+            card.classList.add('card-recebida');
+        }
+
+        if (novoStatus === 'analise') {
+            card.classList.add('card-analise');
+        }
+
+        if (novoStatus === 'resolvida') {
+            card.classList.add('card-resolvida');
+        }
+    }
+
+    document.querySelectorAll('.kanban-card').forEach(card => {
+        card.addEventListener('dragstart', () => {
+            cardArrastado = card;
+        });
+    });
+
+    document.querySelectorAll('.kanban-column').forEach(coluna => {
+        coluna.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        coluna.addEventListener('drop', async (e) => {
+            e.preventDefault();
+
+            if (!cardArrastado) return;
+
+            const areaCards = coluna.querySelector('.kanban-cards');
+            const areaAnterior = cardArrastado.parentElement;
+
+            if (!areaCards) return;
+
+            areaCards.appendChild(cardArrastado);
+
+            const denunciaId = cardArrastado.dataset.id;
+            const novoStatus = coluna.dataset.status;
+
+            atualizarCorCard(cardArrastado, novoStatus);
+
+            const response = await fetch(`/alterar-status/${denunciaId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `status=${novoStatus}`
+            });
+
+            const data = await response.json();
+
+            if (data.status !== 'ok') {
+    areaAnterior.appendChild(cardArrastado);
+    alert('Erro ao atualizar status');
+    cardArrastado = null;
+    return;
+}
+
+setTimeout(() => {
+    window.location.reload();
+}, 400);
+        });
+    });
+
+</script>
+
 
 {% endblock %}
