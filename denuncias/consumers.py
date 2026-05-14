@@ -24,9 +24,10 @@ class NotificacaoConsumer(AsyncWebsocketConsumer):
             self.group_name,
             self.channel_name
         )
-
+        
     async def enviar_notificacao(self, event):
         await self.send(text_data=json.dumps({
-            'titulo': event['titulo'],
-            'mensagem': event['mensagem'],
-        }))
+            "titulo": event["titulo"],
+            "mensagem": event["mensagem"],
+            "tipo": event.get("tipo", "geral"),
+    }))

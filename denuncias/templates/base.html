@@ -361,6 +361,15 @@
                     <div id="notificationCard" class="notification-card">
 
                         <h3>Notificações</h3>
+                        <button type="button" onclick="limparNotificacoes()" style="
+    background:#f3f4f6;
+    color:#374151;
+    padding:6px 10px;
+    font-size:12px;
+    margin-bottom:10px;
+">
+    Limpar notificações
+</button>
 
                         {% if notificacoes %}
                         {% for n in notificacoes %}
@@ -579,6 +588,31 @@
                 }
             }
         });
+
+        function limparNotificacoes() {
+    fetch('/notificacoes/limpar/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'ok') {
+            atualizarBadge(0);
+
+            const card = document.getElementById('notificationCard');
+
+            if (card) {
+                card.innerHTML = `
+                    <h3>Notificações</h3>
+                    <p class="notification-empty">Nenhuma notificação.</p>
+                `;
+            }
+        }
+    });
+}
     </script>
 
 </body>
