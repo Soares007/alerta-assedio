@@ -367,6 +367,19 @@
         </p>
 
         <p><strong>Tipo:</strong> {{ denuncia_selecionada.get_tipo_display }}</p>
+        <p>
+    <strong>Setor:</strong>
+
+    {% if denuncia_selecionada.exibir_setor %}
+        {% if denuncia_selecionada.setor %}
+            {{ denuncia_selecionada.setor.nome }}
+        {% else %}
+            Não informado
+        {% endif %}
+    {% else %}
+        Setor ocultado pelo funcionário
+    {% endif %}
+</p>
         <p><strong>Status:</strong> {{ denuncia_selecionada.get_status_display }}</p>
         <p><strong>Data:</strong> {{ denuncia_selecionada.data_criacao|date:"d/m/Y H:i" }}</p>
 
@@ -374,6 +387,41 @@
         <div class="descricao-box">
             {{ denuncia_selecionada.descricao }}
         </div>
+        <h3>Anexos</h3>
+
+{% if denuncia_selecionada.anexos.all %}
+    {% for anexo in denuncia_selecionada.anexos.all %}
+        <div style="
+            background:#f9fafb;
+            border:1px solid #e5e7eb;
+            border-radius:10px;
+            padding:12px;
+            margin-bottom:10px;
+        ">
+
+            {% if anexo.arquivo %}
+                <p>
+                    <strong>Arquivo:</strong>
+                    <a href="{{ anexo.arquivo.url }}" target="_blank">
+                        Abrir anexo
+                    </a>
+                </p>
+            {% endif %}
+
+            {% if anexo.link %}
+                <p>
+                    <strong>Link:</strong>
+                    <a href="{{ anexo.link }}" target="_blank">
+                        {{ anexo.link }}
+                    </a>
+                </p>
+            {% endif %}
+
+        </div>
+    {% endfor %}
+{% else %}
+    <p class="empty-column">Nenhum anexo enviado.</p>
+{% endif %}
 
         <h3>Responder denúncia</h3>
 

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Denuncia, Notificacao
+from .models import Denuncia, Notificacao, Setor, AnexoDenuncia, PerfilUsuario
 
 @admin.register(Denuncia)
 class DenunciaAdmin(admin.ModelAdmin):
@@ -31,3 +31,18 @@ class NotificacaoAdmin(admin.ModelAdmin):
     list_filter = ('lida', 'data_criacao')
     search_fields = ('titulo', 'mensagem', 'usuario_username')
 
+@admin.register(Setor)
+class SetorAdmin(admin.ModelAdmin):
+    list_display = ('nome',)
+    search_fields = ('nome',)
+    
+@admin.register(PerfilUsuario)
+class PerfilUsuarioAdmin(admin.ModelAdmin):
+    list_display = ('usuario', 'setor')
+    search_fields = ('usuario__username', 'setor__nome')
+
+
+@admin.register(AnexoDenuncia)
+class AnexoDenunciaAdmin(admin.ModelAdmin):
+    list_display = ('denuncia', 'arquivo', 'link', 'data_envio')
+    search_fields = ('link',)
