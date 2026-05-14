@@ -5,6 +5,7 @@
 <h2>Painel do RH</h2>
 
 <style>
+<<<<<<< HEAD
     .kanban-cards {
     min-height: 380px;
 }
@@ -44,6 +45,14 @@
         gap: 24px;
     }
 
+=======
+    .kanban-layout {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 24px;
+    }
+
+>>>>>>> main
     .kanban-board {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -58,6 +67,15 @@
         min-height: 500px;
     }
 
+<<<<<<< HEAD
+=======
+    .kanban-column h3 {
+        margin-bottom: 14px;
+        font-size: 16px;
+        color: #111827;
+    }
+
+>>>>>>> main
     .kanban-card {
         display: block;
         background: white;
@@ -120,6 +138,18 @@
         min-height: 500px;
     }
 
+<<<<<<< HEAD
+=======
+    .detalhes-box h3 {
+        margin-bottom: 14px;
+    }
+
+    .detalhes-info {
+        margin-bottom: 12px;
+        color: #374151;
+    }
+
+>>>>>>> main
     .descricao-box {
         background: #f9fafb;
         border-radius: 10px;
@@ -134,6 +164,7 @@
         margin-top: 10px;
     }
 
+<<<<<<< HEAD
     .paginacao {
         display: flex;
         justify-content: space-between;
@@ -154,6 +185,9 @@
             grid-template-columns: 1fr 1fr;
         }
 
+=======
+    @media (max-width: 1100px) {
+>>>>>>> main
         .kanban-layout {
             grid-template-columns: 1fr;
         }
@@ -164,6 +198,7 @@
     }
 </style>
 
+<<<<<<< HEAD
 <form method="get" class="filtros-rh">
     <div>
         <label>Tipo</label>
@@ -380,11 +415,131 @@
         <form method="post">
             {% csrf_token %}
             {{ form.as_p }}
+=======
+<div class="kanban-layout">
+
+    <div class="kanban-board">
+
+        <div class="kanban-column">
+            <h3>Recebidas ({{ denuncias_recebidas|length }})</h3>
+
+            {% for d in denuncias_recebidas %}
+            <a href="/painel-rh/{{ d.id }}/" class="kanban-card card-recebida">
+                <strong>{{ d.get_tipo_display }}</strong>
+
+                <div class="kanban-meta">
+                    {{ d.data_criacao|date:"d/m/Y H:i" }}
+                </div>
+
+                {% if d.anonima %}
+                <span class="badge badge-anonima">Anônima</span>
+                {% else %}
+                <span class="badge badge-identificada">Identificada</span>
+                {% endif %}
+            </a>
+            {% empty %}
+            <p class="empty-column">Nenhuma denúncia recebida.</p>
+            {% endfor %}
+        </div>
+
+        <div class="kanban-column">
+            <h3>Em análise ({{ denuncias_analise|length }})</h3>
+
+            {% for d in denuncias_analise %}
+            <a href="/painel-rh/{{ d.id }}/" class="kanban-card card-analise">
+                <strong>{{ d.get_tipo_display }}</strong>
+
+                <div class="kanban-meta">
+                    {{ d.data_criacao|date:"d/m/Y H:i" }}
+                </div>
+
+                {% if d.anonima %}
+                <span class="badge badge-anonima">Anônima</span>
+                {% else %}
+                <span class="badge badge-identificada">Identificada</span>
+                {% endif %}
+            </a>
+            {% empty %}
+            <p class="empty-column">Nenhuma denúncia em análise.</p>
+            {% endfor %}
+        </div>
+
+        <div class="kanban-column">
+            <h3>Resolvidas ({{ denuncias_resolvidas|length }})</h3>
+
+            {% for d in denuncias_resolvidas %}
+            <a href="/painel-rh/{{ d.id }}/" class="kanban-card card-resolvida">
+                <strong>{{ d.get_tipo_display }}</strong>
+
+                <div class="kanban-meta">
+                    {{ d.data_criacao|date:"d/m/Y H:i" }}
+                </div>
+
+                {% if d.anonima %}
+                <span class="badge badge-anonima">Anônima</span>
+                {% else %}
+                <span class="badge badge-identificada">Identificada</span>
+                {% endif %}
+            </a>
+            {% empty %}
+            <p class="empty-column">Nenhuma denúncia resolvida.</p>
+            {% endfor %}
+        </div>
+
+    </div>
+
+    <div class="detalhes-box">
+        {% if denuncia_selecionada %}
+        <h3>Detalhes da denúncia</h3>
+
+        <p class="detalhes-info">
+            <strong>Usuário:</strong>
+            {% if denuncia_selecionada.anonima %}
+            Anônimo
+            {% else %}
+            {{ denuncia_selecionada.usuario.username }}
+            {% endif %}
+        </p>
+
+        <p class="detalhes-info">
+            <strong>Tipo:</strong>
+            {{ denuncia_selecionada.get_tipo_display }}
+        </p>
+
+        <p class="detalhes-info">
+            <strong>Status:</strong>
+            {{ denuncia_selecionada.get_status_display }}
+        </p>
+
+        <p class="detalhes-info">
+            <strong>Data:</strong>
+            {{ denuncia_selecionada.data_criacao|date:"d/m/Y H:i" }}
+        </p>
+
+        <strong>Descrição:</strong>
+
+        <div class="descricao-box">
+            {{ denuncia_selecionada.descricao }}
+        </div>
+
+        <h3>Responder denúncia</h3>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+
+>>>>>>> main
             <button type="submit">Salvar resposta</button>
         </form>
         {% else %}
         <h3>Selecione uma denúncia</h3>
+<<<<<<< HEAD
         <p class="empty-column">Clique em um card para visualizar e responder.</p>
+=======
+        <p class="empty-column">
+            Clique em um card do quadro para visualizar os detalhes e responder.
+        </p>
+>>>>>>> main
         {% endif %}
     </div>
 

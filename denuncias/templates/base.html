@@ -567,6 +567,11 @@
 
             atualizarBadge(totalAtual + 1);
             adicionarNotificacaoNoCard(data);
+            if (data.tipo === "nova_denuncia" && window.location.pathname.startsWith("/painel-rh/")) {
+                setTimeout(() => {
+                    window.location.reload();
+                }, 800);
+            }
         };
 
         socket.onerror = function (e) {
