@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import Denuncia, Notificacao, Setor, AnexoDenuncia, PerfilUsuario
+from .models import FeedbackIA
 
 @admin.register(Denuncia)
 class DenunciaAdmin(admin.ModelAdmin):
@@ -46,3 +47,9 @@ class PerfilUsuarioAdmin(admin.ModelAdmin):
 class AnexoDenunciaAdmin(admin.ModelAdmin):
     list_display = ('denuncia', 'arquivo', 'link', 'data_envio')
     search_fields = ('link',)
+    
+@admin.register(FeedbackIA)
+class FeedbackIAAdmin(admin.ModelAdmin):
+    list_display = ('tipo_sugerido', 'tipo_correto', 'usuario', 'data_criacao')
+    list_filter = ('tipo_sugerido', 'tipo_correto', 'data_criacao')
+    search_fields = ('texto',)

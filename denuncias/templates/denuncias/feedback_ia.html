@@ -1,0 +1,407 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+    .feedback-header {
+        margin-bottom: 24px;
+    }
+
+    .feedback-header h2 {
+        color: #111827;
+        margin-bottom: 8px;
+    }
+
+    .feedback-header p {
+        color: #6b7280;
+        line-height: 1.5;
+    }
+
+    .feedback-filtros {
+        display: grid;
+        grid-template-columns: 2fr 1fr auto;
+        gap: 12px;
+        margin-bottom: 24px;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        padding: 16px;
+        border-radius: 14px;
+    }
+
+    .feedback-filtros label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 6px;
+        display: block;
+    }
+
+    .feedback-acoes {
+        display: flex;
+        align-items: end;
+        gap: 8px;
+    }
+
+    .btn-limpar {
+        padding: 12px 14px;
+        border-radius: 8px;
+        background: #e5e7eb;
+        color: #111827;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .feedback-list {
+        display: grid;
+        gap: 18px;
+    }
+
+    .feedback-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .feedback-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+        margin-bottom: 16px;
+    }
+
+    .badge-tipo {
+        display: inline-block;
+        background: #eff6ff;
+        color: #1d4ed8;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .feedback-data {
+        color: #6b7280;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    .relato-box {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 14px;
+        color: #374151;
+        line-height: 1.6;
+        margin-bottom: 16px;
+        max-height: 180px;
+        overflow-y: auto;
+    }
+
+    .feedback-form {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: end;
+    }
+
+    .feedback-form label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 6px;
+        display: block;
+    }
+
+    .feedback-form select {
+        margin-bottom: 0;
+    }
+
+    .btn-salvar-correcao {
+        height: 44px;
+        white-space: nowrap;
+        font-weight: 600;
+    }
+
+    .empty-feedback {
+        background: #f9fafb;
+        border: 1px dashed #d1d5db;
+        border-radius: 16px;
+        padding: 30px;
+        color: #6b7280;
+        text-align: center;
+    }
+
+    .feedback-paginacao {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 14px;
+        margin-top: 28px;
+    }
+
+    .feedback-paginacao a {
+        padding: 10px 14px;
+        background: #2563eb;
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: 0.2s;
+    }
+
+    .feedback-paginacao a:hover {
+        background: #1d4ed8;
+    }
+
+    .feedback-paginacao span {
+        color: #374151;
+        font-weight: 600;
+    }
+
+    @media (max-width: 900px) {
+        .feedback-form {
+            grid-template-columns: 1fr;
+        }
+
+        .feedback-top {
+            flex-direction: column;
+        }
+
+        .feedback-data {
+            white-space: normal;
+        }
+
+        .feedback-filtros {
+            grid-template-columns: 1fr;
+        }
+
+        .feedback-acoes {
+            align-items: stretch;
+        }
+    }
+</style>
+
+<div class="feedback-header">
+    <h2>Correção da IA</h2>
+
+    <p>
+        Revise as classificações sugeridas pela IA e corrija quando necessário.
+        Esses feedbacks serão usados para melhorar o modelo de machine learning.
+    </p>
+</div>
+
+<form method="get" class="feedback-filtros">
+
+    <div>
+        <label>Buscar no relato</label>
+
+        <input type="text"
+               name="busca"
+               value="{{ busca }}"
+               placeholder="Ex: ameaça, humilhação, comentário...">
+    </div>
+
+    <div>
+        <label>Categoria atual</label>
+
+        <select name="tipo">
+            <option value="">Todas</option>
+
+            <option value="moral"
+                {% if tipo_filtro == 'moral' %}selected{% endif %}>
+                Assédio moral
+            </option>
+
+            <option value="sexual"
+                {% if tipo_filtro == 'sexual' %}selected{% endif %}>
+                Assédio sexual
+            </option>
+
+            <option value="abuso"
+                {% if tipo_filtro == 'abuso' %}selected{% endif %}>
+                Abuso de poder
+            </option>
+
+            <option value="discriminacao"
+                {% if tipo_filtro == 'discriminacao' %}selected{% endif %}>
+                Discriminação
+            </option>
+
+            <option value="ameaca"
+                {% if tipo_filtro == 'ameaca' %}selected{% endif %}>
+                Ameaça
+            </option>
+
+            <option value="violencia"
+                {% if tipo_filtro == 'violencia' %}selected{% endif %}>
+                Violência
+            </option>
+
+            <option value="outros"
+                {% if tipo_filtro == 'outros' %}selected{% endif %}>
+                Outros
+            </option>
+        </select>
+    </div>
+
+   <div class="feedback-acoes">
+    <a href="/feedback-ia/" class="btn-limpar">
+        Limpar filtros
+    </a>
+</div>
+
+</form>
+
+<div class="feedback-list">
+
+    {% for d in denuncias %}
+
+        <div class="feedback-card">
+
+            <div class="feedback-top">
+
+                <div>
+                    <span class="badge-tipo">
+                        Classificação atual:
+                        {{ d.get_tipo_display }}
+                    </span>
+                </div>
+
+                <div class="feedback-data">
+                    {{ d.data_criacao|date:"d/m/Y H:i" }}
+                </div>
+
+            </div>
+
+            <strong>Relato analisado</strong>
+
+            <div class="relato-box">
+                {{ d.descricao }}
+            </div>
+
+            <form method="post" class="feedback-form">
+
+                {% csrf_token %}
+
+                <input type="hidden"
+                       name="denuncia_id"
+                       value="{{ d.id }}">
+
+                <div>
+
+                    <label>
+                        Categoria correta
+                    </label>
+
+                    <select name="tipo_correto" required>
+
+                        <option value="moral"
+                            {% if d.tipo == 'moral' %}selected{% endif %}>
+                            Assédio moral
+                        </option>
+
+                        <option value="sexual"
+                            {% if d.tipo == 'sexual' %}selected{% endif %}>
+                            Assédio sexual
+                        </option>
+
+                        <option value="abuso"
+                            {% if d.tipo == 'abuso' %}selected{% endif %}>
+                            Abuso de poder
+                        </option>
+
+                        <option value="discriminacao"
+                            {% if d.tipo == 'discriminacao' %}selected{% endif %}>
+                            Discriminação
+                        </option>
+
+                        <option value="ameaca"
+                            {% if d.tipo == 'ameaca' %}selected{% endif %}>
+                            Ameaça
+                        </option>
+
+                        <option value="violencia"
+                            {% if d.tipo == 'violencia' %}selected{% endif %}>
+                            Violência
+                        </option>
+
+                        <option value="outros"
+                            {% if d.tipo == 'outros' %}selected{% endif %}>
+                            Outros
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <button type="submit"
+                        class="btn-salvar-correcao">
+                    Salvar correção
+                </button>
+
+            </form>
+
+        </div>
+
+    {% empty %}
+
+        <div class="empty-feedback">
+            Nenhuma denúncia encontrada para revisão.
+        </div>
+
+    {% endfor %}
+
+</div>
+
+<div class="feedback-paginacao">
+
+    {% if denuncias.has_previous %}
+
+        <a href="?page={{ denuncias.previous_page_number }}&busca={{ busca }}&tipo={{ tipo_filtro }}">
+            ← Anterior
+        </a>
+
+    {% endif %}
+
+    <span>
+        Página {{ denuncias.number }}
+        de
+        {{ denuncias.paginator.num_pages }}
+    </span>
+
+    {% if denuncias.has_next %}
+
+        <a href="?page={{ denuncias.next_page_number }}&busca={{ busca }}&tipo={{ tipo_filtro }}">
+            Próxima →
+        </a>
+
+    {% endif %}
+
+</div>
+
+<script>
+    const filtroBusca = document.querySelector('input[name="busca"]');
+    const filtroTipo = document.querySelector('select[name="tipo"]');
+    const formFiltros = document.querySelector('.feedback-filtros');
+
+    let timeoutBusca;
+
+    if (filtroBusca) {
+        filtroBusca.addEventListener('input', () => {
+            clearTimeout(timeoutBusca);
+
+            timeoutBusca = setTimeout(() => {
+                formFiltros.submit();
+            }, 500);
+        });
+    }
+
+    if (filtroTipo) {
+        filtroTipo.addEventListener('change', () => {
+            formFiltros.submit();
+        });
+    }
+</script>
+
+{% endblock %}

@@ -129,6 +129,16 @@
             grid-template-columns: 1fr;
         }
     }
+
+    @keyframes girarIA {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
 </style>
 
 <div class="home-hero">
@@ -200,56 +210,118 @@
 </div>
 
 <script>
-    function analisarRelato() {
-        const texto = document.getElementById('relatoAssistente').value.toLowerCase();
+    function getCookie(name) {
+        let cookieValue = null;
+
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(
+                        cookie.substring(name.length + 1)
+                    );
+
+                    break;
+                }
+            }
+        }
+
+        return cookieValue;
+    }
+
+    async function analisarRelato() {
+        const texto = document.getElementById('relatoAssistente').value;
         const resultado = document.getElementById('resultadoIA');
 
-        let tipo = 'Situação não identificada com clareza';
-        let explicacao = 'O relato precisa de mais detalhes. Tente informar o que aconteceu, quem participou, frequência e se houve ameaças, constrangimentos ou condutas inadequadas.';
+        if (!texto.trim()) {
+            resultado.style.display = 'block';
 
-        const palavrasMoral = [
-            'humilha', 'humilhou', 'gritou', 'gritos', 'ameaça', 'ameaçou',
-            'perseguição', 'persegue', 'ridiculariza', 'xingamento', 'ofensa',
-            'constrangimento', 'isolamento', 'pressão', 'intimidação'
-        ];
+            resultado.innerHTML = `
+                <strong>Escreva um relato</strong>
+                <p>
+                    Digite um resumo da situação para que a IA possa analisar.
+                </p>
+            `;
 
-        const palavrasSexual = [
-            'sexual', 'beijo', 'toque', 'tocou', 'cantada', 'assédio sexual',
-            'convite íntimo', 'comentário sobre corpo', 'corpo', 'insinuação',
-            'mensagem indevida', 'favor sexual', 'nudez'
-        ];
-
-        const palavrasAbuso = [
-            'cargo', 'chefe', 'superior', 'ordem abusiva', 'ameaçou demitir',
-            'demissão', 'poder', 'autoridade', 'obrigou', 'fora da função',
-            'desvio de função', 'meta impossível'
-        ];
-
-        const contar = (lista) => {
-            return lista.filter(palavra => texto.includes(palavra)).length;
-        };
-
-        const moral = contar(palavrasMoral);
-        const sexual = contar(palavrasSexual);
-        const abuso = contar(palavrasAbuso);
-
-        if (sexual > moral && sexual >= abuso && sexual > 0) {
-            tipo = 'Possível assédio sexual';
-            explicacao = 'O relato contém sinais ligados a condutas de natureza sexual, comentários, insinuações ou contatos inadequados.';
-        } else if (moral >= sexual && moral >= abuso && moral > 0) {
-            tipo = 'Possível assédio moral';
-            explicacao = 'O relato contém sinais de humilhação, constrangimento, perseguição, intimidação ou exposição repetida.';
-        } else if (abuso > 0) {
-            tipo = 'Possível abuso de poder';
-            explicacao = 'O relato contém sinais de uso indevido de cargo, autoridade, ameaça ou imposição abusiva.';
+            return;
         }
 
         resultado.style.display = 'block';
+
         resultado.innerHTML = `
-            <strong>${tipo}</strong>
-            <p>${explicacao}</p>
-            <small>Essa análise é apenas uma orientação inicial. O RH deve avaliar o caso com responsabilidade e sigilo.</small>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="
+                    width:18px;
+                    height:18px;
+                    border:3px solid #bfdbfe;
+                    border-top:3px solid #2563eb;
+                    border-radius:50%;
+                    animation:girarIA 0.8s linear infinite;
+                "></div>
+
+                <span>
+                    IA analisando o relato...
+                </span>
+            </div>
         `;
+
+        try {
+            const response = await fetch('/api/analisar-relato/', {
+                method: 'POST',
+
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+
+                body: `texto=${encodeURIComponent(texto)}`
+            });
+
+            const data = await response.json();
+
+            resultado.innerHTML = `
+                <strong style="
+                    font-size:18px;
+                    display:block;
+                    margin-bottom:8px;
+                ">
+                    ${data.titulo}
+                </strong>
+
+                <p style="margin-bottom:12px;">
+                    ${data.mensagem}
+                </p>
+
+                <div style="
+                    background:#dbeafe;
+                    padding:10px;
+                    border-radius:10px;
+                    margin-bottom:12px;
+                ">
+                    <strong>Confiança da IA:</strong>
+                    ${data.confianca || 0}%
+                </div>
+
+                <small>
+                    Essa análise utiliza machine learning treinado com relatos reais e feedbacks do RH.
+                    A classificação é apenas uma sugestão inicial.
+                </small>
+            `;
+
+        } catch (erro) {
+
+            resultado.innerHTML = `
+                <strong>Erro ao analisar</strong>
+
+                <p>
+                    Não foi possível processar o relato agora.
+                    Tente novamente.
+                </p>
+            `;
+        }
     }
 </script>
 
