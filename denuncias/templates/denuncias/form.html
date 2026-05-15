@@ -389,18 +389,15 @@
                             }, 900);
                         }
 
-                        resultado.classList.remove('ia-resultado-animado');
-                        void resultado.offsetWidth;
-                        resultado.classList.add('ia-resultado-animado');
-
                         resultado.innerHTML = `
-                        <strong>${data.titulo}</strong><br>
-                        ${data.mensagem}<br><br>
-                        <small>
-                            O sistema sugeriu essa opção com base em sinais encontrados no relato.
-                            Essa sugestão não substitui a análise humana do RH.
-                        </small>
-                    `;
+    <strong>${data.titulo}</strong><br>
+    ${data.mensagem}<br><br>
+    <strong>Confiança da IA:</strong> ${data.confianca || 0}%<br><br>
+    <small>
+        O sistema sugeriu essa opção com base em um modelo simples de machine learning treinado com exemplos.
+        Essa sugestão não substitui a análise humana do RH.
+    </small>
+`;
 
                         botaoIA.disabled = false;
                         botaoIA.innerText = 'Analisar relato com IA';
