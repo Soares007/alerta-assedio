@@ -2,28 +2,255 @@
 
 {% block content %}
 
-<h2>Bem-vindo ao Sistema de Denúncias</h2>
+<style>
+    .home-hero {
+        background: linear-gradient(135deg, #111827, #2563eb);
+        color: white;
+        padding: 42px;
+        border-radius: 20px;
+        margin-bottom: 28px;
+        position: relative;
+        overflow: hidden;
+    }
 
-<p>
-    Este sistema foi criado para registrar, acompanhar e analisar denúncias
-    relacionadas ao ambiente de trabalho, com foco em segurança, sigilo e organização.
-</p>
+    .home-hero::after {
+        content: "";
+        position: absolute;
+        width: 260px;
+        height: 260px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.08);
+        right: -80px;
+        top: -80px;
+    }
 
-<br>
+    .home-hero h1 {
+        font-size: 36px;
+        margin-bottom: 12px;
+        position: relative;
+        z-index: 1;
+    }
 
-{% if user.is_authenticated %}
+    .home-hero p {
+        font-size: 16px;
+        max-width: 720px;
+        line-height: 1.6;
+        position: relative;
+        z-index: 1;
+    }
 
-    <p>Você está logado como <strong>{{ user.username }}</strong>.</p>
+    .home-actions {
+        margin-top: 24px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        position: relative;
+        z-index: 1;
+    }
 
+    .btn-home-light {
+        background: white;
+        color: #1f2937;
+    }
 
-{% else %}
+    .btn-home-light:hover {
+        background: #f3f4f6;
+    }
 
-    <p>Faça login para registrar ou acompanhar suas denúncias.</p>
-<br>
-    <a href="/login/">
-        <button>Entrar no sistema</button>
-    </a>
+    .home-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+        margin-bottom: 28px;
+    }
 
-{% endif %}
+    .home-info-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 22px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .home-info-card h3 {
+        color: #111827;
+        margin-bottom: 10px;
+    }
+
+    .home-info-card p {
+        color: #4b5563;
+        line-height: 1.5;
+    }
+
+    .frase-box {
+        background: #ecfdf5;
+        border-left: 5px solid #16a34a;
+        padding: 20px;
+        border-radius: 14px;
+        color: #166534;
+        margin-bottom: 28px;
+        font-weight: 600;
+    }
+
+    .assistente-box {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        padding: 24px;
+    }
+
+    .assistente-box h2 {
+        margin-bottom: 10px;
+    }
+
+    .assistente-box p {
+        color: #4b5563;
+        margin-bottom: 15px;
+        line-height: 1.5;
+    }
+
+    .resultado-ia {
+        display: none;
+        margin-top: 18px;
+        padding: 16px;
+        border-radius: 12px;
+        background: #eff6ff;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
+    }
+
+    .resultado-ia strong {
+        display: block;
+        margin-bottom: 6px;
+    }
+
+    @media (max-width: 1000px) {
+        .home-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="home-hero">
+    <h1>Canal Seguro de Denúncias</h1>
+
+    <p>
+        Um ambiente de trabalho saudável começa quando as pessoas têm segurança para falar.
+        Este sistema ajuda funcionários e RH a registrarem, acompanharem e tratarem denúncias com sigilo,
+        organização e responsabilidade.
+    </p>
+
+    <div class="home-actions">
+        {% if user.is_authenticated %}
+            <a href="/denuncia/">
+                <button class="btn-home-light">Registrar denúncia</button>
+            </a>
+
+            <a href="/minhas-denuncias/">
+                <button>Minhas denúncias</button>
+            </a>
+        {% else %}
+            <a href="/login/">
+                <button class="btn-home-light">Entrar no sistema</button>
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="home-grid">
+    <div class="home-info-card">
+        <h3>Sigilo e respeito</h3>
+        <p>
+            O funcionário pode registrar uma denúncia anônima e também escolher se deseja exibir ou ocultar seu setor.
+        </p>
+    </div>
+
+    <div class="home-info-card">
+        <h3>Acompanhamento</h3>
+        <p>
+            Cada denúncia possui status, resposta do RH, notificações e histórico para acompanhamento seguro.
+        </p>
+    </div>
+
+    <div class="home-info-card">
+        <h3>Gestão pelo RH</h3>
+        <p>
+            O RH conta com painel Kanban, filtros, dashboard, anexos e notificações em tempo real.
+        </p>
+    </div>
+</div>
+
+<div class="frase-box">
+    “Falar sobre um problema não é fraqueza. É o primeiro passo para construir um ambiente mais seguro, justo e humano.”
+</div>
+
+<div class="assistente-box">
+    <h2>Assistente de orientação</h2>
+
+    <p>
+        Não sabe exatamente qual tipo de situação está enfrentando? Escreva um resumo do ocorrido abaixo.
+        O sistema fará uma sugestão inicial para ajudar você a entender melhor o caso.
+    </p>
+
+    <textarea id="relatoAssistente" rows="5" placeholder="Exemplo: meu superior me humilha na frente dos colegas, faz piadas sobre mim e me ameaça..."></textarea>
+
+    <button type="button" onclick="analisarRelato()">Analisar relato</button>
+
+    <div id="resultadoIA" class="resultado-ia"></div>
+</div>
+
+<script>
+    function analisarRelato() {
+        const texto = document.getElementById('relatoAssistente').value.toLowerCase();
+        const resultado = document.getElementById('resultadoIA');
+
+        let tipo = 'Situação não identificada com clareza';
+        let explicacao = 'O relato precisa de mais detalhes. Tente informar o que aconteceu, quem participou, frequência e se houve ameaças, constrangimentos ou condutas inadequadas.';
+
+        const palavrasMoral = [
+            'humilha', 'humilhou', 'gritou', 'gritos', 'ameaça', 'ameaçou',
+            'perseguição', 'persegue', 'ridiculariza', 'xingamento', 'ofensa',
+            'constrangimento', 'isolamento', 'pressão', 'intimidação'
+        ];
+
+        const palavrasSexual = [
+            'sexual', 'beijo', 'toque', 'tocou', 'cantada', 'assédio sexual',
+            'convite íntimo', 'comentário sobre corpo', 'corpo', 'insinuação',
+            'mensagem indevida', 'favor sexual', 'nudez'
+        ];
+
+        const palavrasAbuso = [
+            'cargo', 'chefe', 'superior', 'ordem abusiva', 'ameaçou demitir',
+            'demissão', 'poder', 'autoridade', 'obrigou', 'fora da função',
+            'desvio de função', 'meta impossível'
+        ];
+
+        const contar = (lista) => {
+            return lista.filter(palavra => texto.includes(palavra)).length;
+        };
+
+        const moral = contar(palavrasMoral);
+        const sexual = contar(palavrasSexual);
+        const abuso = contar(palavrasAbuso);
+
+        if (sexual > moral && sexual >= abuso && sexual > 0) {
+            tipo = 'Possível assédio sexual';
+            explicacao = 'O relato contém sinais ligados a condutas de natureza sexual, comentários, insinuações ou contatos inadequados.';
+        } else if (moral >= sexual && moral >= abuso && moral > 0) {
+            tipo = 'Possível assédio moral';
+            explicacao = 'O relato contém sinais de humilhação, constrangimento, perseguição, intimidação ou exposição repetida.';
+        } else if (abuso > 0) {
+            tipo = 'Possível abuso de poder';
+            explicacao = 'O relato contém sinais de uso indevido de cargo, autoridade, ameaça ou imposição abusiva.';
+        }
+
+        resultado.style.display = 'block';
+        resultado.innerHTML = `
+            <strong>${tipo}</strong>
+            <p>${explicacao}</p>
+            <small>Essa análise é apenas uma orientação inicial. O RH deve avaliar o caso com responsabilidade e sigilo.</small>
+        `;
+    }
+</script>
 
 {% endblock %}

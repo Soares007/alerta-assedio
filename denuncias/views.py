@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from .forms import DenunciaForm, RespostaDenunciaForm
-from .models import Denuncia, Notificacao, AnexoDenuncia, PerfilUsuario
+from .models import Denuncia, Notificacao,  AnexoDenuncia, PerfilUsuario
 from django.contrib import messages
 from django.http import JsonResponse
 from django.core.mail import EmailMultiAlternatives
@@ -10,8 +10,6 @@ from asgiref.sync import async_to_sync
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.contrib.auth.models import User
-from django.db.models import Count
-from django.db.models.functions import TruncDate
 
 
 def criar_notificacao_usuario(usuario, titulo, mensagem, tipo="geral"):
@@ -47,11 +45,11 @@ def enviar_email_html(assunto, mensagem_texto, mensagem_html, destinatarios):
 
 @login_required
 def dashboard(request):
-    eh_rh = request.user.groups.filter(name="RH").exists()
-    eh_admin = request.user.groups.filter(name="Administrador").exists()
-    eh_superuser = request.user.is_superuser
+    ui_rh = request.user.groups.filter(name="RH").exists()
+    ui_admin = request.user.groups.filter(name="Administrador").exists()
+    ui_superuser = request.user.is_superuser
 
-    if eh_rh or eh_admin or eh_superuser:
+    if ui_rh or ui_admin or ui_superuser:
         denuncias = Denuncia.objects.all()
     else:
         denuncias = Denuncia.objects.filter(usuario=request.user)
@@ -66,20 +64,6 @@ def dashboard(request):
     analise = denuncias.filter(status="analise").count()
     resolvidas = denuncias.filter(status="resolvida").count()
 
-    por_setor = (
-        denuncias.filter(setor__isnull=False)
-        .values("setor__nome")
-        .annotate(total=Count("id"))
-        .order_by("-total")
-    )
-
-    por_dia = (
-        denuncias.annotate(dia=TruncDate("data_criacao"))
-        .values("dia")
-        .annotate(total=Count("id"))
-        .order_by("dia")
-    )
-
     context = {
         "total": total,
         "moral": moral,
@@ -88,10 +72,6 @@ def dashboard(request):
         "recebidas": recebidas,
         "analise": analise,
         "resolvidas": resolvidas,
-        "setores_labels": [item["setor__nome"] for item in por_setor],
-        "setores_valores": [item["total"] for item in por_setor],
-        "dias_labels": [item["dia"].strftime("%d/%m") for item in por_dia],
-        "dias_valores": [item["total"] for item in por_dia],
     }
 
     return render(request, "denuncias/dashboard.html", context)
@@ -125,21 +105,23 @@ def criar_denuncia(request):
         if form.is_valid():
             denuncia = form.save(commit=False)
             denuncia.usuario = request.user
-
+            
             perfil = PerfilUsuario.objects.filter(usuario=request.user).first()
-
+            
             if perfil:
-                denuncia.setor = perfil.setor
-
+             denuncia.setor = perfil.setor
+             
             denuncia.save()
-
-            arquivo = form.cleaned_data.get("arquivo")
-            link = form.cleaned_data.get("link")
+            
+            arquivo = form.cleaned_data.get('arquivo')
+            link = form.cleaned_data.get('link')
 
             if arquivo or link:
                 AnexoDenuncia.objects.create(
-                    denuncia=denuncia, arquivo=arquivo, link=link
-                )
+                     denuncia=denuncia,
+                     arquivo=arquivo,
+                     link=link
+            )
 
             usuarios_rh = User.objects.filter(groups__name="RH")
             emails_rh = [u.email for u in usuarios_rh if u.email]
@@ -445,3 +427,55 @@ def limpar_notificacoes(request):
         return JsonResponse({"status": "ok"})
 
     return JsonResponse({"status": "erro"}, status=400)
+
+@login_required
+def analisar_relato(request):
+    texto = request.POST.get('texto', '').lower()
+
+    palavras_moral = [
+        'humilha', 'humilhou', 'gritou', 'ameaça', 'ameaçou',
+        'perseguição', 'xingamento', 'ofensa', 'constrangimento',
+        'isolamento', 'intimidação', 'ridiculariza'
+    ]
+
+    palavras_sexual = [
+        'sexual', 'toque', 'tocou', 'beijo', 'cantada',
+        'corpo', 'insinuação', 'mensagem indevida',
+        'favor sexual', 'comentário sobre corpo'
+    ]
+
+    palavras_abuso = [
+        'chefe', 'superior', 'cargo', 'autoridade',
+        'obrigou', 'demissão', 'ameaçou demitir',
+        'desvio de função', 'meta impossível', 'ordem abusiva'
+    ]
+
+    def contar(lista):
+        return sum(1 for palavra in lista if palavra in texto)
+
+    moral = contar(palavras_moral)
+    sexual = contar(palavras_sexual)
+    abuso = contar(palavras_abuso)
+
+    tipo = ''
+    titulo = 'Não identificado com clareza'
+    mensagem = 'O relato precisa de mais detalhes para sugerir um tipo de denúncia.'
+
+    if sexual > moral and sexual >= abuso and sexual > 0:
+        tipo = 'sexual'
+        titulo = 'Possível assédio sexual'
+        mensagem = 'O relato apresenta sinais de conduta sexual inadequada.'
+    elif moral >= sexual and moral >= abuso and moral > 0:
+        tipo = 'moral'
+        titulo = 'Possível assédio moral'
+        mensagem = 'O relato apresenta sinais de humilhação, perseguição ou constrangimento.'
+    elif abuso > 0:
+        tipo = 'abuso'
+        titulo = 'Possível abuso de poder'
+        mensagem = 'O relato apresenta sinais de uso indevido de autoridade.'
+
+    return JsonResponse({
+        'tipo': tipo,
+        'titulo': titulo,
+        'mensagem': mensagem
+    })
