@@ -428,54 +428,21 @@ def limpar_notificacoes(request):
 
     return JsonResponse({"status": "erro"}, status=400)
 
+from .ia.analisador import analisar_texto
+
+
 @login_required
 def analisar_relato(request):
-    texto = request.POST.get('texto', '').lower()
+    if request.method != 'POST':
+        return JsonResponse({
+            'tipo': '',
+            'titulo': 'Método inválido',
+            'mensagem': 'Envie um relato para análise.',
+            'confianca': 0
+        }, status=400)
 
-    palavras_moral = [
-        'humilha', 'humilhou', 'gritou', 'ameaça', 'ameaçou',
-        'perseguição', 'xingamento', 'ofensa', 'constrangimento',
-        'isolamento', 'intimidação', 'ridiculariza'
-    ]
+    texto = request.POST.get('texto', '')
 
-    palavras_sexual = [
-        'sexual', 'toque', 'tocou', 'beijo', 'cantada',
-        'corpo', 'insinuação', 'mensagem indevida',
-        'favor sexual', 'comentário sobre corpo'
-    ]
+    resultado = analisar_texto(texto)
 
-    palavras_abuso = [
-        'chefe', 'superior', 'cargo', 'autoridade',
-        'obrigou', 'demissão', 'ameaçou demitir',
-        'desvio de função', 'meta impossível', 'ordem abusiva'
-    ]
-
-    def contar(lista):
-        return sum(1 for palavra in lista if palavra in texto)
-
-    moral = contar(palavras_moral)
-    sexual = contar(palavras_sexual)
-    abuso = contar(palavras_abuso)
-
-    tipo = ''
-    titulo = 'Não identificado com clareza'
-    mensagem = 'O relato precisa de mais detalhes para sugerir um tipo de denúncia.'
-
-    if sexual > moral and sexual >= abuso and sexual > 0:
-        tipo = 'sexual'
-        titulo = 'Possível assédio sexual'
-        mensagem = 'O relato apresenta sinais de conduta sexual inadequada.'
-    elif moral >= sexual and moral >= abuso and moral > 0:
-        tipo = 'moral'
-        titulo = 'Possível assédio moral'
-        mensagem = 'O relato apresenta sinais de humilhação, perseguição ou constrangimento.'
-    elif abuso > 0:
-        tipo = 'abuso'
-        titulo = 'Possível abuso de poder'
-        mensagem = 'O relato apresenta sinais de uso indevido de autoridade.'
-
-    return JsonResponse({
-        'tipo': tipo,
-        'titulo': titulo,
-        'mensagem': mensagem
-    })
+    return JsonResponse(resultado)
