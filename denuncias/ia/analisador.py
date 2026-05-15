@@ -11,6 +11,9 @@ def analisar_texto(texto):
             "tipo": "",
             "titulo": "Relato insuficiente",
             "mensagem": "Escreva mais detalhes para que a IA consiga sugerir uma classificação.",
+            "confianca": 0,
+            "gravidade": "baixa",
+            "urgente": False,
         }
 
     modelo = joblib.load(MODELO_PATH)
@@ -18,7 +21,6 @@ def analisar_texto(texto):
     tipo = modelo.predict([texto])[0]
 
     probabilidades = modelo.predict_proba([texto])[0]
-    classes = modelo.classes_
 
     confianca = max(probabilidades)
     confianca_percentual = round(confianca * 100, 2)
@@ -28,26 +30,32 @@ def analisar_texto(texto):
             "titulo": "Possível assédio moral",
             "mensagem": "A IA identificou sinais de humilhação, perseguição, constrangimento ou intimidação.",
         },
+
         "sexual": {
             "titulo": "Possível assédio sexual",
             "mensagem": "A IA identificou sinais de comentários, insinuações, mensagens ou contatos de natureza sexual.",
         },
+
         "abuso": {
             "titulo": "Possível abuso de poder",
             "mensagem": "A IA identificou sinais de uso indevido de autoridade, ordens abusivas ou desvio de função.",
         },
+
         "discriminacao": {
             "titulo": "Possível discriminação",
             "mensagem": "A IA identificou sinais de tratamento desigual, preconceito ou exclusão.",
         },
+
         "ameaca": {
             "titulo": "Possível ameaça",
             "mensagem": "A IA identificou sinais de intimidação, coação ou ameaça direta.",
         },
+
         "violencia": {
             "titulo": "Possível violência",
             "mensagem": "A IA identificou sinais de agressão física ou conduta violenta.",
         },
+
         "outros": {
             "titulo": "Situação não classificada",
             "mensagem": "A IA não encontrou sinais suficientes para classificar com segurança.",
@@ -59,9 +67,81 @@ def analisar_texto(texto):
         "mensagem": "A IA não conseguiu identificar claramente o tipo de situação.",
     })
 
+    texto_lower = texto.lower()
+
+    gravidade = "baixa"
+    urgente = False
+
+    palavras_criticas = [
+        "morte",
+        "vou morrer",
+        "me matar",
+        "suicídio",
+        "arma",
+        "faca",
+        "agressão",
+        "agrediu",
+        "sangue",
+        "violência",
+        "ameaça",
+        "ameaçou",
+        "medo",
+        "desespero",
+        "pânico",
+        "socorro",
+    ]
+
+    palavras_altas = [
+        "humilhação constante",
+        "ameaça de demissão",
+        "perseguição diária",
+        "toque sem consentimento",
+        "agressivo",
+        "coação",
+        "intimidação",
+        "pressão psicológica",
+        "abuso constante",
+    ]
+
+    if any(palavra in texto_lower for palavra in palavras_criticas):
+        gravidade = "critica"
+        urgente = True
+
+    elif any(palavra in texto_lower for palavra in palavras_altas):
+        gravidade = "alta"
+        urgente = True
+
+    elif tipo in ["sexual", "violencia", "ameaca"]:
+        gravidade = "alta"
+        urgente = True
+
+    elif tipo in ["moral", "abuso", "discriminacao"]:
+        gravidade = "media"
+
+    else:
+        gravidade = "baixa"
+
     return {
         "tipo": tipo,
         "titulo": resposta["titulo"],
         "mensagem": resposta["mensagem"],
         "confianca": confianca_percentual,
+        "gravidade": gravidade,
+        "urgente": urgente,
     }
+    
+def gerar_resumo(texto):
+    frases = texto.split('.')
+
+    frases_limpas = [
+        frase.strip()
+        for frase in frases
+        if frase.strip()
+    ]
+
+    resumo = '. '.join(frases_limpas[:2])
+
+    if resumo:
+        resumo += '.'
+
+    return resumo
