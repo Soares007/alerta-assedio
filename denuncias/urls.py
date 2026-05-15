@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import home, criar_denuncia, limpar_notificacoes, sucesso, minhas_denuncias, dashboard, todas_denuncias, painel_rh, marcar_notificacoes_lidas, api_notificacoes, alterar_status_denuncia, analisar_relato
+from .views import home, criar_denuncia, limpar_notificacoes, sucesso, minhas_denuncias, dashboard, todas_denuncias, painel_rh, marcar_notificacoes_lidas, api_notificacoes, alterar_status_denuncia, analisar_relato, feedback_ia
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -17,6 +17,7 @@ urlpatterns = [
     path('alterar-status/<int:denuncia_id>/', alterar_status_denuncia, name='alterar_status_denuncia'),
     path('notificacoes/limpar/', limpar_notificacoes, name='limpar_notificacoes'),
     path('api/analisar-relato/', analisar_relato, name='analisar_relato'),
+    path('feedback-ia/', feedback_ia, name='feedback_ia'),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

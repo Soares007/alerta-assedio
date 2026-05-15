@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from .forms import DenunciaForm, RespostaDenunciaForm
+from .forms import DenunciaForm, RespostaDenunciaForm, FeedbackIA
 from .models import Denuncia, Notificacao,  AnexoDenuncia, PerfilUsuario
 from django.contrib import messages
 from django.http import JsonResponse
@@ -10,6 +10,8 @@ from asgiref.sync import async_to_sync
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.contrib.auth.models import User
+from django.db.models import Count
+from django.db.models.functions import TruncDate
 
 
 def criar_notificacao_usuario(usuario, titulo, mensagem, tipo="geral"):
@@ -45,11 +47,11 @@ def enviar_email_html(assunto, mensagem_texto, mensagem_html, destinatarios):
 
 @login_required
 def dashboard(request):
-    ui_rh = request.user.groups.filter(name="RH").exists()
-    ui_admin = request.user.groups.filter(name="Administrador").exists()
-    ui_superuser = request.user.is_superuser
+    eh_rh = request.user.groups.filter(name="RH").exists()
+    eh_admin = request.user.groups.filter(name="Administrador").exists()
+    eh_superuser = request.user.is_superuser
 
-    if ui_rh or ui_admin or ui_superuser:
+    if eh_rh or eh_admin or eh_superuser:
         denuncias = Denuncia.objects.all()
     else:
         denuncias = Denuncia.objects.filter(usuario=request.user)
@@ -64,6 +66,20 @@ def dashboard(request):
     analise = denuncias.filter(status="analise").count()
     resolvidas = denuncias.filter(status="resolvida").count()
 
+    por_setor = (
+        denuncias.filter(setor__isnull=False)
+        .values("setor__nome")
+        .annotate(total=Count("id"))
+        .order_by("-total")
+    )
+
+    por_dia = (
+        denuncias.annotate(dia=TruncDate("data_criacao"))
+        .values("dia")
+        .annotate(total=Count("id"))
+        .order_by("dia")
+    )
+
     context = {
         "total": total,
         "moral": moral,
@@ -72,6 +88,10 @@ def dashboard(request):
         "recebidas": recebidas,
         "analise": analise,
         "resolvidas": resolvidas,
+        "setores_labels": [item["setor__nome"] for item in por_setor],
+        "setores_valores": [item["total"] for item in por_setor],
+        "dias_labels": [item["dia"].strftime("%d/%m") for item in por_dia],
+        "dias_valores": [item["total"] for item in por_dia],
     }
 
     return render(request, "denuncias/dashboard.html", context)
@@ -445,4 +465,63 @@ def analisar_relato(request):
 
     resultado = analisar_texto(texto)
 
+    if not isinstance(resultado, dict):
+        resultado = {
+            'tipo': '',
+            'titulo': 'Não identificado com clareza',
+            'mensagem': str(resultado),
+            'confianca': 0
+        }
+
     return JsonResponse(resultado)
+
+
+@login_required
+def feedback_ia(request):
+    eh_rh = request.user.groups.filter(name='RH').exists()
+    eh_admin = request.user.groups.filter(name='Administrador').exists()
+    eh_superuser = request.user.is_superuser
+
+    if not (eh_rh or eh_admin or eh_superuser):
+        return redirect('home')
+
+    busca = request.GET.get('busca', '')
+    tipo = request.GET.get('tipo', '')
+    pagina = request.GET.get('page')
+
+    denuncias = Denuncia.objects.all().order_by('-data_criacao')
+
+    if busca:
+        denuncias = denuncias.filter(descricao__icontains=busca)
+
+    if tipo:
+        denuncias = denuncias.filter(tipo=tipo)
+
+    if request.method == 'POST':
+        denuncia_id = request.POST.get('denuncia_id')
+        tipo_correto = request.POST.get('tipo_correto')
+
+        denuncia = Denuncia.objects.get(id=denuncia_id)
+
+        FeedbackIA.objects.create(
+            texto=denuncia.descricao,
+            tipo_sugerido=denuncia.tipo,
+            tipo_correto=tipo_correto,
+            usuario=request.user
+        )
+
+        denuncia.tipo = tipo_correto
+        denuncia.save()
+
+        messages.success(request, 'Correção salva com sucesso!')
+
+        return redirect('feedback_ia')
+
+    paginator = Paginator(denuncias, 8)
+    denuncias_paginadas = paginator.get_page(pagina)
+
+    return render(request, 'denuncias/feedback_ia.html', {
+        'denuncias': denuncias_paginadas,
+        'busca': busca,
+        'tipo_filtro': tipo,
+    })

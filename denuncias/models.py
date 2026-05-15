@@ -18,9 +18,13 @@ class PerfilUsuario(models.Model):
 
 class Denuncia(models.Model):
     TIPOS = [
-        ("moral", "Assédio Moral"),
-        ("sexual", "Assédio Sexual"),
-        ("abuso", "Abuso de Poder"),
+    ('moral', 'Assédio Moral'),
+    ('sexual', 'Assédio Sexual'),
+    ('abuso', 'Abuso de Poder'),
+    ('discriminacao', 'Discriminação'),
+    ('ameaca', 'Ameaça'),
+    ('violencia', 'Violência'),
+    ('outros', 'Outros'),
     ]
 
     STATUS = [
@@ -65,3 +69,13 @@ class Notificacao(models.Model):
 
     def _str_(self):
         return self.titulo
+    
+class FeedbackIA(models.Model):
+    texto = models.TextField()
+    tipo_sugerido = models.CharField(max_length=50)
+    tipo_correto = models.CharField(max_length=50)
+    usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    data_criacao = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.tipo_sugerido} -> {self.tipo_correto}"

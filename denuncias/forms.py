@@ -13,3 +13,11 @@ class RespostaDenunciaForm(forms.ModelForm):
     class Meta:
         model = Denuncia
         fields = ['status', 'resposta_rh']
+        
+from .models import FeedbackIA
+
+
+class FeedbackIAForm(forms.ModelForm):
+    class Meta:
+        model = FeedbackIA
+        fields = ['tipo_correto']
