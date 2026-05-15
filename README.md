@@ -30,6 +30,7 @@ O sistema possui um painel completo para RH e administradores, permitindo acompa
 - JavaScript
 - Kanban Drag & Drop
 - Sistema de notificações em tempo real
+- Machine Learning Local Ai
 
 ---
 
