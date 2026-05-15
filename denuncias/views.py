@@ -12,6 +12,7 @@ from django.http import JsonResponse
 from django.contrib.auth.models import User
 from django.db.models import Count
 from django.db.models.functions import TruncDate
+from .ia.analisador import analisar_texto
 
 
 def criar_notificacao_usuario(usuario, titulo, mensagem, tipo="geral"):
@@ -126,6 +127,25 @@ def criar_denuncia(request):
             denuncia = form.save(commit=False)
             denuncia.usuario = request.user
             
+            resultado_ia = analisar_texto(denuncia.descricao)
+            from .ia.analisador import gerar_resumo
+
+            denuncia.resumo_ia = gerar_resumo(
+              denuncia.descricao
+)
+
+            denuncia.tipo = resultado_ia.get("tipo") or denuncia.tipo
+            denuncia.gravidade = resultado_ia.get("gravidade", "baixa")
+            denuncia.urgente = resultado_ia.get("urgente", False)
+            prioridades = {
+    "baixa": 1,
+    "media": 2,
+    "alta": 3,
+    "critica": 4,
+}
+
+            denuncia.prioridade_ia = prioridades.get(denuncia.gravidade, 1)
+            
             perfil = PerfilUsuario.objects.filter(usuario=request.user).first()
             
             if perfil:
@@ -233,10 +253,16 @@ def painel_rh(request, denuncia_id=None):
     if data_fim:
         denuncias_base = denuncias_base.filter(data_criacao__date__lte=data_fim)
 
-    if ordem == "antigas":
-        denuncias_base = denuncias_base.order_by("data_criacao")
+    if ordem == 'antigas':
+     denuncias_base = denuncias_base.order_by(
+        '-prioridade_ia',
+        'data_criacao'
+    )
     else:
-        denuncias_base = denuncias_base.order_by("-data_criacao")
+     denuncias_base = denuncias_base.order_by(
+        '-prioridade_ia',
+        '-data_criacao'
+    )
 
     recebidas_lista = denuncias_base.filter(status="recebida")
     analise_lista = denuncias_base.filter(status="analise")
