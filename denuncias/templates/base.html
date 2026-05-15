@@ -281,7 +281,7 @@
 
         {% if ui_rh or ui_admin %}
         <a href="/painel-rh/">Painel RH</a>
-        <a href="/todas-denuncias/">Todas as denúncias</a>
+        <a href="/todas-denuncias/">Histórico de Denuncias</a>
         {% endif %}
         {% else %}
         <a href="/login/">Entrar</a>
@@ -368,8 +368,8 @@
     font-size:12px;
     margin-bottom:10px;
 ">
-    Limpar notificações
-</button>
+                            Limpar notificações
+                        </button>
 
                         {% if notificacoes %}
                         {% for n in notificacoes %}
@@ -595,29 +595,29 @@
         });
 
         function limparNotificacoes() {
-    fetch('/notificacoes/limpar/', {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken'),
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'ok') {
-            atualizarBadge(0);
+            fetch('/notificacoes/limpar/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        atualizarBadge(0);
 
-            const card = document.getElementById('notificationCard');
+                        const card = document.getElementById('notificationCard');
 
-            if (card) {
-                card.innerHTML = `
+                        if (card) {
+                            card.innerHTML = `
                     <h3>Notificações</h3>
                     <p class="notification-empty">Nenhuma notificação.</p>
                 `;
-            }
+                        }
+                    }
+                });
         }
-    });
-}
     </script>
 
 </body>

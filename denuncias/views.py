@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from .forms import DenunciaForm, RespostaDenunciaForm
-from .models import Denuncia, Notificacao,  AnexoDenuncia, PerfilUsuario
+from .models import Denuncia, Notificacao, AnexoDenuncia, PerfilUsuario
 from django.contrib import messages
 from django.http import JsonResponse
 from django.core.mail import EmailMultiAlternatives
@@ -10,6 +10,8 @@ from asgiref.sync import async_to_sync
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.contrib.auth.models import User
+from django.db.models import Count
+from django.db.models.functions import TruncDate
 
 
 def criar_notificacao_usuario(usuario, titulo, mensagem, tipo="geral"):
@@ -45,11 +47,11 @@ def enviar_email_html(assunto, mensagem_texto, mensagem_html, destinatarios):
 
 @login_required
 def dashboard(request):
-    ui_rh = request.user.groups.filter(name="RH").exists()
-    ui_admin = request.user.groups.filter(name="Administrador").exists()
-    ui_superuser = request.user.is_superuser
+    eh_rh = request.user.groups.filter(name="RH").exists()
+    eh_admin = request.user.groups.filter(name="Administrador").exists()
+    eh_superuser = request.user.is_superuser
 
-    if ui_rh or ui_admin or ui_superuser:
+    if eh_rh or eh_admin or eh_superuser:
         denuncias = Denuncia.objects.all()
     else:
         denuncias = Denuncia.objects.filter(usuario=request.user)
@@ -64,6 +66,20 @@ def dashboard(request):
     analise = denuncias.filter(status="analise").count()
     resolvidas = denuncias.filter(status="resolvida").count()
 
+    por_setor = (
+        denuncias.filter(setor__isnull=False)
+        .values("setor__nome")
+        .annotate(total=Count("id"))
+        .order_by("-total")
+    )
+
+    por_dia = (
+        denuncias.annotate(dia=TruncDate("data_criacao"))
+        .values("dia")
+        .annotate(total=Count("id"))
+        .order_by("dia")
+    )
+
     context = {
         "total": total,
         "moral": moral,
@@ -72,6 +88,10 @@ def dashboard(request):
         "recebidas": recebidas,
         "analise": analise,
         "resolvidas": resolvidas,
+        "setores_labels": [item["setor__nome"] for item in por_setor],
+        "setores_valores": [item["total"] for item in por_setor],
+        "dias_labels": [item["dia"].strftime("%d/%m") for item in por_dia],
+        "dias_valores": [item["total"] for item in por_dia],
     }
 
     return render(request, "denuncias/dashboard.html", context)
@@ -105,23 +125,21 @@ def criar_denuncia(request):
         if form.is_valid():
             denuncia = form.save(commit=False)
             denuncia.usuario = request.user
-            
+
             perfil = PerfilUsuario.objects.filter(usuario=request.user).first()
-            
+
             if perfil:
-             denuncia.setor = perfil.setor
-             
+                denuncia.setor = perfil.setor
+
             denuncia.save()
-            
-            arquivo = form.cleaned_data.get('arquivo')
-            link = form.cleaned_data.get('link')
+
+            arquivo = form.cleaned_data.get("arquivo")
+            link = form.cleaned_data.get("link")
 
             if arquivo or link:
                 AnexoDenuncia.objects.create(
-                     denuncia=denuncia,
-                     arquivo=arquivo,
-                     link=link
-            )
+                    denuncia=denuncia, arquivo=arquivo, link=link
+                )
 
             usuarios_rh = User.objects.filter(groups__name="RH")
             emails_rh = [u.email for u in usuarios_rh if u.email]
