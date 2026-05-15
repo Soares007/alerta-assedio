@@ -1,16 +1,440 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>Registrar nova denúncia</h2>
 
-<p>Preencha as informações abaixo com atenção.
-    Caso prefira, marque a opção de denúncia anônima.
-</p>
+<style>
+    .denuncia-header {
+        margin-bottom: 25px;
+    }
 
-<form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Enviar denúncia</button>
-</form>
+    .denuncia-header h2 {
+        color: #111827;
+        margin-bottom: 8px;
+    }
+
+    .denuncia-header p {
+        color: #6b7280;
+        line-height: 1.5;
+    }
+
+    .denuncia-layout {
+        display: grid;
+        grid-template-columns: 1.4fr 0.8fr;
+        gap: 24px;
+        align-items: start;
+    }
+
+    .form-box,
+    .ia-box {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .form-box h3,
+    .ia-box h3 {
+        margin-bottom: 14px;
+        color: #111827;
+    }
+
+    .form-box p {
+        margin-bottom: 12px;
+    }
+
+    .form-box label {
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .form-box input[type="checkbox"] {
+        width: auto;
+        margin-right: 8px;
+    }
+
+    .helper-text {
+        font-size: 13px;
+        color: #6b7280;
+        margin-top: -12px;
+        margin-bottom: 16px;
+    }
+
+    .btn-enviar {
+        width: 100%;
+        margin-top: 10px;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .btn-ia {
+        width: 100%;
+        background: #111827;
+        margin-top: 12px;
+    }
+
+    .btn-ia:hover {
+        background: #1f2937;
+    }
+
+    .resultado-ia {
+        display: none;
+        margin-top: 18px;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+        padding: 16px;
+        border-radius: 12px;
+        line-height: 1.5;
+    }
+
+    .ia-loading {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .ia-spinner {
+        width: 18px;
+        height: 18px;
+        border: 3px solid #bfdbfe;
+        border-top: 3px solid #2563eb;
+        border-radius: 50%;
+        animation: girarIA 0.8s linear infinite;
+    }
+
+    @keyframes girarIA {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .ia-resultado-animado {
+        animation: aparecerIA 0.4s ease;
+    }
+
+    @keyframes aparecerIA {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .campo-destacado {
+        animation: destaqueCampo 0.8s ease;
+        border-color: #2563eb !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    @keyframes destaqueCampo {
+        0% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.02);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .info-card {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 14px;
+        margin-top: 16px;
+        color: #4b5563;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    @media (max-width: 1000px) {
+        .denuncia-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .upload-area {
+        position: relative;
+        border: 2px dashed #cbd5e1;
+        border-radius: 16px;
+        padding: 28px;
+        background: #f8fafc;
+        cursor: pointer;
+        transition: 0.3s;
+        overflow: hidden;
+        margin-bottom: 12px;
+    }
+
+    .upload-area:hover {
+        border-color: #2563eb;
+        background: #eff6ff;
+    }
+
+    .upload-input {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .upload-content {
+        text-align: center;
+    }
+
+    .upload-icon {
+        font-size: 42px;
+        margin-bottom: 10px;
+    }
+
+    .upload-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #111827;
+    }
+
+    .upload-subtitle {
+        font-size: 13px;
+        color: #6b7280;
+        margin-top: 6px;
+    }
+
+    .arquivo-selecionado {
+        display: none;
+        margin-top: 12px;
+        background: #ecfdf5;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+        padding: 12px;
+        border-radius: 12px;
+        font-size: 14px;
+        animation: aparecerIA 0.3s ease;
+    }
+</style>
+
+<div class="denuncia-header">
+    <h2>Registrar nova denúncia</h2>
+    <p>
+        Preencha as informações com atenção. Você pode registrar a denúncia de forma anônima,
+        ocultar seu setor e enviar anexos ou links que ajudem na análise.
+    </p>
+</div>
+
+<div class="denuncia-layout">
+
+    <div class="form-box">
+        <h3>Dados da denúncia</h3>
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <label for="id_tipo">Tipo de denúncia</label>
+            {{ form.tipo }}
+
+            <label for="id_descricao">Descrição do ocorrido</label>
+            {{ form.descricao }}
+            <p class="helper-text">
+                Descreva o que aconteceu, quando ocorreu, se foi repetido e quem estava envolvido.
+            </p>
+
+            <div style="margin-bottom: 16px;">
+                {{ form.anonima }}
+                <label for="id_anonima">Enviar como denúncia anônima</label>
+                <p class="helper-text">
+                    O RH não verá seu nome na denúncia.
+                </p>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                {{ form.exibir_setor }}
+                <label for="id_exibir_setor">Permitir exibição do meu setor</label>
+                <p class="helper-text">
+                    Se desmarcar, o RH verá apenas que o setor foi ocultado.
+                </p>
+            </div>
+
+            {% if form.arquivo %}
+            <label>Anexos</label>
+
+            <div class="upload-area" id="uploadArea">
+                <input type="file" name="arquivo" id="id_arquivo" class="upload-input">
+
+                <div class="upload-content">
+                    <div class="upload-icon">📎</div>
+
+                    <div class="upload-title">
+                        Clique para anexar um arquivo
+                    </div>
+
+                    <div class="upload-subtitle">
+                        Imagens, vídeos, PDFs e documentos
+                    </div>
+                </div>
+            </div>
+
+            <div id="arquivoSelecionado" class="arquivo-selecionado"></div>
+            {% endif %}
+
+            {% if form.link %}
+            <label for="id_link">Link de apoio</label>
+            {{ form.link }}
+            <p class="helper-text">
+                Cole aqui links de prints, vídeos, documentos ou outras evidências externas.
+            </p>
+            {% endif %}
+
+            <button type="submit" class="btn-enviar">Enviar denúncia</button>
+        </form>
+    </div>
+
+    <div class="ia-box">
+        <h3>Assistente de análise</h3>
+
+        <p style="color:#6b7280; line-height:1.5;">
+            Após escrever a descrição, clique no botão abaixo para receber uma sugestão automática
+            sobre o tipo de denúncia.
+        </p>
+
+        <button type="button" class="btn-ia" id="botaoIA">
+            Analisar relato com IA
+        </button>
+
+        <div id="resultado-ia" class="resultado-ia"></div>
+
+        <div class="info-card">
+            Essa análise é apenas uma orientação inicial. A avaliação final deve ser feita pelo RH
+            com responsabilidade, sigilo e cuidado.
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+
+        return cookieValue;
+    }
+
+    const descricao = document.getElementById('id_descricao');
+    const tipo = document.getElementById('id_tipo');
+    const botaoIA = document.getElementById('botaoIA');
+    const resultado = document.getElementById('resultado-ia');
+
+    if (botaoIA && descricao) {
+        botaoIA.addEventListener('click', () => {
+            if (!descricao.value.trim()) {
+                resultado.style.display = 'block';
+                resultado.innerHTML = `
+                    <strong>Escreva um relato primeiro</strong><br>
+                    Para analisar, descreva brevemente o que aconteceu.
+                `;
+                return;
+            }
+
+            botaoIA.disabled = true;
+            botaoIA.innerText = 'Analisando...';
+
+            resultado.style.display = 'block';
+            resultado.innerHTML = `
+                <div class="ia-loading">
+                    <div class="ia-spinner"></div>
+                    <span>IA analisando o relato...</span>
+                </div>
+            `;
+
+            fetch('/api/analisar-relato/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `texto=${encodeURIComponent(descricao.value)}`
+            })
+                .then(response => response.json())
+                .then(data => {
+                    setTimeout(() => {
+                        if (data.tipo && tipo) {
+                            tipo.value = data.tipo;
+
+                            tipo.classList.add('campo-destacado');
+
+                            setTimeout(() => {
+                                tipo.classList.remove('campo-destacado');
+                            }, 900);
+                        }
+
+                        resultado.classList.remove('ia-resultado-animado');
+                        void resultado.offsetWidth;
+                        resultado.classList.add('ia-resultado-animado');
+
+                        resultado.innerHTML = `
+                        <strong>${data.titulo}</strong><br>
+                        ${data.mensagem}<br><br>
+                        <small>
+                            O sistema sugeriu essa opção com base em sinais encontrados no relato.
+                            Essa sugestão não substitui a análise humana do RH.
+                        </small>
+                    `;
+
+                        botaoIA.disabled = false;
+                        botaoIA.innerText = 'Analisar relato com IA';
+                    }, 900);
+                })
+                .catch(() => {
+                    resultado.innerHTML = `
+                    <strong>Erro ao analisar</strong><br>
+                    Não foi possível analisar o relato agora. Tente novamente.
+                `;
+
+                    botaoIA.disabled = false;
+                    botaoIA.innerText = 'Analisar relato com IA';
+                });
+        });
+    }
+
+    const inputArquivo = document.getElementById('id_arquivo');
+    const arquivoSelecionado = document.getElementById('arquivoSelecionado');
+
+    if (inputArquivo && arquivoSelecionado) {
+        inputArquivo.addEventListener('change', () => {
+            if (inputArquivo.files.length > 0) {
+                const arquivo = inputArquivo.files[0];
+
+                arquivoSelecionado.style.display = 'block';
+
+                arquivoSelecionado.innerHTML = `
+                <strong>Arquivo selecionado:</strong><br>
+                ${arquivo.name}
+            `;
+            }
+        });
+    }
+</script>
 
 {% endblock %}
