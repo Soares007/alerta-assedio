@@ -1,0 +1,390 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+    .arquivadas-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+
+    .arquivadas-header h2 {
+        color: #111827;
+        margin-bottom: 8px;
+    }
+
+    .arquivadas-header p {
+        color: #6b7280;
+        line-height: 1.5;
+        max-width: 900px;
+    }
+
+    .filtros-arquivadas {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr auto;
+        gap: 12px;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 18px;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .limpar-arquivadas {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        background: #f3f4f6;
+        color: #374151;
+        border-radius: 10px;
+        font-weight: 600;
+        padding: 12px;
+        transition: 0.2s;
+    }
+
+    .limpar-arquivadas:hover {
+        background: #e5e7eb;
+    }
+
+    .arquivadas-grid {
+        display: grid;
+        gap: 18px;
+    }
+
+    .arquivada-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        padding: 22px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.04);
+        border-left: 5px solid #6b7280;
+        transition: 0.2s;
+    }
+
+    .arquivada-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .arquivada-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+        margin-bottom: 18px;
+    }
+
+    .arquivada-title h3 {
+        margin-bottom: 10px;
+        color: #111827;
+    }
+
+    .badge-arquivada {
+        display: inline-block;
+        background: #f3f4f6;
+        color: #374151;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .badge-status {
+        display: inline-block;
+        background: #dcfce7;
+        color: #166534;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        margin-left: 6px;
+    }
+
+    .arquivada-data {
+        color: #6b7280;
+        font-size: 13px;
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    .arquivada-info {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .info-mini {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 12px;
+    }
+
+    .info-mini span {
+        display: block;
+        color: #6b7280;
+        font-size: 12px;
+        margin-bottom: 4px;
+    }
+
+    .info-mini strong {
+        color: #111827;
+        font-size: 14px;
+    }
+
+    .descricao-arquivada {
+        background: #f9fafb;
+        border-radius: 12px;
+        padding: 14px;
+        color: #374151;
+        line-height: 1.6;
+        margin-bottom: 16px;
+        border: 1px solid #e5e7eb;
+    }
+
+    .resposta-box {
+        background: #ecfdf5;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+        border-radius: 12px;
+        padding: 14px;
+        line-height: 1.6;
+    }
+
+    .sem-resposta {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+        border-radius: 12px;
+        padding: 14px;
+    }
+
+    .empty-arquivadas {
+        background: #f9fafb;
+        border: 1px dashed #d1d5db;
+        color: #6b7280;
+        padding: 30px;
+        border-radius: 16px;
+        text-align: center;
+    }
+
+    .paginacao-arquivadas {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 14px;
+        margin-top: 26px;
+    }
+
+    .paginacao-arquivadas button {
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 14px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+    .paginacao-arquivadas button:hover {
+        background: #1d4ed8;
+    }
+
+    .paginacao-arquivadas span {
+        color: #374151;
+        font-weight: 600;
+    }
+
+    @media (max-width: 1000px) {
+
+        .filtros-arquivadas {
+            grid-template-columns: 1fr;
+        }
+
+        .arquivada-info {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .arquivadas-header,
+        .arquivada-top {
+            flex-direction: column;
+        }
+
+        .arquivada-data {
+            text-align: left;
+            white-space: normal;
+        }
+    }
+
+    @media (max-width: 600px) {
+        .arquivada-info {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="arquivadas-header">
+
+    <div>
+        <h2>Denúncias Arquivadas</h2>
+
+        <p>
+            Histórico de denúncias concluídas ou removidas do quadro principal.
+            Utilize os filtros abaixo para localizar registros específicos.
+        </p>
+    </div>
+
+</div>
+
+<form id="filtrosArquivadas" class="filtros-arquivadas">
+
+    <input
+        type="text"
+        name="busca"
+        placeholder="Pesquisar descrição..."
+        value="{{ busca }}"
+    >
+
+    <select name="tipo">
+
+        <option value="">Todos os tipos</option>
+
+        <option value="moral"
+            {% if tipo_filtro == 'moral' %}selected{% endif %}>
+            Assédio moral
+        </option>
+
+        <option value="sexual"
+            {% if tipo_filtro == 'sexual' %}selected{% endif %}>
+            Assédio sexual
+        </option>
+
+        <option value="abuso"
+            {% if tipo_filtro == 'abuso' %}selected{% endif %}>
+            Abuso de poder
+        </option>
+
+        <option value="discriminacao"
+            {% if tipo_filtro == 'discriminacao' %}selected{% endif %}>
+            Discriminação
+        </option>
+
+        <option value="ameaca"
+            {% if tipo_filtro == 'ameaca' %}selected{% endif %}>
+            Ameaça
+        </option>
+
+        <option value="violencia"
+            {% if tipo_filtro == 'violencia' %}selected{% endif %}>
+            Violência
+        </option>
+
+        <option value="outros"
+            {% if tipo_filtro == 'outros' %}selected{% endif %}>
+            Outros
+        </option>
+
+    </select>
+
+    <select name="gravidade">
+
+        <option value="">Todas gravidades</option>
+
+        <option value="baixa"
+            {% if gravidade_filtro == 'baixa' %}selected{% endif %}>
+            Baixa
+        </option>
+
+        <option value="media"
+            {% if gravidade_filtro == 'media' %}selected{% endif %}>
+            Média
+        </option>
+
+        <option value="alta"
+            {% if gravidade_filtro == 'alta' %}selected{% endif %}>
+            Alta
+        </option>
+
+        <option value="critica"
+            {% if gravidade_filtro == 'critica' %}selected{% endif %}>
+            Crítica
+        </option>
+
+    </select>
+
+    <a href="/denuncias-arquivadas/" class="limpar-arquivadas">
+        Limpar filtros
+    </a>
+
+</form>
+
+<div id="listaArquivadas">
+
+    {% include 'denuncias/partials/lista_arquivadas.html' %}
+
+</div>
+
+<script>
+
+    const formArquivadas = document.getElementById('filtrosArquivadas');
+    const listaArquivadas = document.getElementById('listaArquivadas');
+
+    let timeoutBusca;
+
+    function carregarArquivadas(page = 1) {
+
+        const formData = new FormData(formArquivadas);
+
+        const params = new URLSearchParams(formData);
+
+        params.set('page', page);
+
+        fetch(`/denuncias-arquivadas/?${params.toString()}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+
+        .then(response => response.json())
+
+        .then(data => {
+            listaArquivadas.innerHTML = data.html;
+        });
+    }
+
+    if (formArquivadas) {
+
+        const busca = formArquivadas.querySelector(
+            'input[name="busca"]'
+        );
+
+        const selects = formArquivadas.querySelectorAll('select');
+
+        busca.addEventListener('input', () => {
+
+            clearTimeout(timeoutBusca);
+
+            timeoutBusca = setTimeout(() => {
+                carregarArquivadas(1);
+            }, 500);
+
+        });
+
+        selects.forEach(select => {
+
+            select.addEventListener('change', () => {
+                carregarArquivadas(1);
+            });
+
+        });
+
+    }
+
+</script>
+
+{% endblock %}

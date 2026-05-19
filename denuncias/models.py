@@ -54,6 +54,8 @@ class Denuncia(models.Model):
     prioridade_ia = models.IntegerField(default=1)
     resumo_ia = models.TextField(blank=True, null=True)
     data_criacao = models.DateTimeField(auto_now_add=True)
+    arquivada = models.BooleanField(default=False)
+    data_arquivamento = models.DateTimeField(null=True, blank=True)
     resposta_rh = models.TextField(blank=True, null=True)
     setor = models.ForeignKey(Setor, on_delete=models.SET_NULL, null=True, blank=True)
     exibir_setor = models.BooleanField(default=True)

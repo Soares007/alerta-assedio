@@ -1,0 +1,94 @@
+{% if denuncias %}
+
+<div class="arquivadas-grid">
+
+    {% for d in denuncias %}
+        <div class="arquivada-card">
+            <div class="arquivada-top">
+                <div class="arquivada-title">
+                    <h3>{{ d.get_tipo_display }}</h3>
+                    <span class="badge-arquivada">Arquivada</span>
+                    <span class="badge-status">{{ d.get_status_display }}</span>
+                </div>
+
+                <div class="arquivada-data">
+                    <strong>Criada em:</strong><br>
+                    {{ d.data_criacao|date:"d/m/Y H:i" }}
+
+                    {% if d.data_arquivamento %}
+                        <br><br>
+                        <strong>Arquivada em:</strong><br>
+                        {{ d.data_arquivamento|date:"d/m/Y H:i" }}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="arquivada-info">
+                <div class="info-mini">
+                    <span>Anonimato</span>
+                    <strong>{% if d.anonima %}Anônima{% else %}Identificada{% endif %}</strong>
+                </div>
+
+                <div class="info-mini">
+                    <span>Setor</span>
+                    <strong>
+                        {% if d.exibir_setor %}
+                            {% if d.setor %}{{ d.setor.nome }}{% else %}Não informado{% endif %}
+                        {% else %}
+                            Ocultado
+                        {% endif %}
+                    </strong>
+                </div>
+
+                <div class="info-mini">
+                    <span>Gravidade</span>
+                    <strong>{{ d.get_gravidade_display }}</strong>
+                </div>
+
+                <div class="info-mini">
+                    <span>Prioridade IA</span>
+                    <strong>{{ d.prioridade_ia }}</strong>
+                </div>
+            </div>
+
+            {% if d.resumo_ia %}
+                <strong>Resumo da IA</strong>
+                <div class="descricao-arquivada">{{ d.resumo_ia }}</div>
+            {% endif %}
+
+            <strong>Descrição</strong>
+            <div class="descricao-arquivada">{{ d.descricao }}</div>
+
+            <strong>Resposta do RH</strong>
+
+            {% if d.resposta_rh %}
+                <div class="resposta-box">{{ d.resposta_rh }}</div>
+            {% else %}
+                <div class="sem-resposta">Ainda não há resposta registrada para esta denúncia.</div>
+            {% endif %}
+        </div>
+    {% endfor %}
+
+</div>
+
+<div class="paginacao-arquivadas">
+    {% if denuncias.has_previous %}
+        <button type="button" onclick="carregarArquivadas({{ denuncias.previous_page_number }})">
+            ← Anterior
+        </button>
+    {% endif %}
+
+    <span>Página {{ denuncias.number }} de {{ denuncias.paginator.num_pages }}</span>
+
+    {% if denuncias.has_next %}
+        <button type="button" onclick="carregarArquivadas({{ denuncias.next_page_number }})">
+            Próxima →
+        </button>
+    {% endif %}
+</div>
+
+{% else %}
+    <div class="empty-arquivadas">
+        Nenhuma denúncia arquivada encontrada.
+    </div>
+{% endif %}

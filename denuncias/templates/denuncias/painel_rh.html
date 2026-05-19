@@ -585,6 +585,14 @@
             {{ form.as_p }}
             <button type="submit">Salvar resposta</button>
         </form>
+        {% if denuncia_selecionada.status == 'resolvida' %}
+    <form method="post" action="/arquivar-denuncia/{{ denuncia_selecionada.id }}/" style="margin-top:15px;">
+        {% csrf_token %}
+        <button type="submit" style="background:#6b7280;">
+            Arquivar denúncia
+        </button>
+    </form>
+{% endif %}
         {% else %}
         <h3>Selecione uma denúncia</h3>
         <p class="empty-column">Clique em um card para visualizar e responder.</p>
