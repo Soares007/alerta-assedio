@@ -128,23 +128,22 @@ def criar_denuncia(request):
             denuncia.usuario = request.user
             
             resultado_ia = analisar_texto(denuncia.descricao)
+            
             from .ia.analisador import gerar_resumo
-
             denuncia.resumo_ia = gerar_resumo(
-              denuncia.descricao
-)
-
+                denuncia.descricao
+            )
+            
             denuncia.tipo = resultado_ia.get("tipo") or denuncia.tipo
             denuncia.gravidade = resultado_ia.get("gravidade", "baixa")
-            denuncia.urgente = resultado_ia.get("urgente", False)
             prioridades = {
-    "baixa": 1,
-    "media": 2,
-    "alta": 3,
-    "critica": 4,
-}
-
+                "baixa": 1,
+                "media": 2,
+                "alta": 3,
+                "critica": 4,
+            }
             denuncia.prioridade_ia = prioridades.get(denuncia.gravidade, 1)
+            denuncia.urgente = resultado_ia.get("urgente", False)
             
             perfil = PerfilUsuario.objects.filter(usuario=request.user).first()
             
@@ -254,16 +253,16 @@ def painel_rh(request, denuncia_id=None):
         denuncias_base = denuncias_base.filter(data_criacao__date__lte=data_fim)
 
     if ordem == 'antigas':
-     denuncias_base = denuncias_base.order_by(
-        '-prioridade_ia',
-        'data_criacao'
-    )
+        denuncias_base = denuncias_base.order_by(
+            '-prioridade_ia',
+            'data_criacao'
+        )
     else:
-     denuncias_base = denuncias_base.order_by(
-        '-prioridade_ia',
-        '-data_criacao'
-    )
-
+        denuncias_base = denuncias_base.order_by(
+            '-prioridade_ia',
+            '-data_criacao'
+        )
+            
     recebidas_lista = denuncias_base.filter(status="recebida")
     analise_lista = denuncias_base.filter(status="analise")
     resolvidas_lista = denuncias_base.filter(status="resolvida")

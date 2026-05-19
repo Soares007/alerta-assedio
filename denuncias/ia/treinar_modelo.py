@@ -51,6 +51,10 @@ textos = [
     "quero registrar uma situação desconfortável",
     "algo aconteceu e preciso de orientação",
     "não sei se isso é assédio",
+    "meu supervisor me obrigou a fazer uma tarefa pessoal",
+    "me mandaram fazer serviço particular do chefe",
+    "fui obrigado a fazer algo fora da minha função sob ameaça",
+    "meu chefe exigiu tarefa pessoal sem remuneração",
 ]
 
 rotulos = [
@@ -89,6 +93,10 @@ rotulos = [
     "outros",
     "outros",
     "outros",
+    "abuso",
+    "abuso",
+    "abuso",
+    "abuso",
 ]
 
 

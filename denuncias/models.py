@@ -38,20 +38,21 @@ class Denuncia(models.Model):
     ('media', 'Média'),
     ('alta', 'Alta'),
     ('critica', 'Crítica'),
-    ]
+]
 
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     descricao = models.TextField()
-    resumo_ia = models.TextField(blank=True, null=True)
     tipo = models.CharField(max_length=20, choices=TIPOS)
     anonima = models.BooleanField(default=False)
     status = models.CharField(max_length=20, choices=STATUS, default="recebida")
-    prioridade_ia = models.IntegerField(default=1)
     gravidade = models.CharField(
     max_length=20,
     choices=GRAVIDADES,
-    default='baixa')
+    default='baixa'
+)
     urgente = models.BooleanField(default=False)
+    prioridade_ia = models.IntegerField(default=1)
+    resumo_ia = models.TextField(blank=True, null=True)
     data_criacao = models.DateTimeField(auto_now_add=True)
     resposta_rh = models.TextField(blank=True, null=True)
     setor = models.ForeignKey(Setor, on_delete=models.SET_NULL, null=True, blank=True)
