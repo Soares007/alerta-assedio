@@ -19,6 +19,22 @@ def analisar_texto(texto):
     modelo = joblib.load(MODELO_PATH)
 
     tipo = modelo.predict([texto])[0]
+    texto_lower = texto.lower()
+    
+    regras_abuso = [
+        "supervisor me obrigou",
+        "chefe me obrigou",
+        "me obrigou a fazer",
+        "tarefa pessoal",
+        "sem remuneração",
+        "fora da minha função",
+        "desvio de função",
+        "ameaça de demissão",
+        "sob ameaça",
+    ]
+    
+    if any(regra in texto_lower for regra in regras_abuso):
+        tipo = "abuso"
 
     probabilidades = modelo.predict_proba([texto])[0]
 
@@ -131,17 +147,27 @@ def analisar_texto(texto):
     }
     
 def gerar_resumo(texto):
+    if not texto or not texto.strip():
+        return ""
+
+    texto_lower = texto.lower()
+
+    if "obrigou" in texto_lower or "tarefa pessoal" in texto_lower or "fora da minha função" in texto_lower:
+        return "Funcionário relata possível abuso de autoridade envolvendo imposição de tarefa inadequada ou fora de sua função."
+
+    if "ameaça" in texto_lower or "ameaçou" in texto_lower or "medo" in texto_lower:
+        return "Funcionário relata situação envolvendo ameaça, intimidação ou medo no ambiente de trabalho."
+
+    if "humilhou" in texto_lower or "humilha" in texto_lower or "xingou" in texto_lower:
+        return "Funcionário relata possível constrangimento, humilhação ou exposição no ambiente de trabalho."
+
+    if "corpo" in texto_lower or "sexual" in texto_lower or "tocou" in texto_lower:
+        return "Funcionário relata possível conduta inadequada de natureza sexual."
+
     frases = texto.split('.')
+    frases_limpas = [frase.strip() for frase in frases if frase.strip()]
 
-    frases_limpas = [
-        frase.strip()
-        for frase in frases
-        if frase.strip()
-    ]
+    if len(frases_limpas) > 1:
+        return frases_limpas[0] + "."
 
-    resumo = '. '.join(frases_limpas[:2])
-
-    if resumo:
-        resumo += '.'
-
-    return resumo
+    return "Relato registrado para análise do RH."

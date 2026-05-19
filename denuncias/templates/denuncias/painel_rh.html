@@ -237,6 +237,9 @@
     font-size: 13px;
     color: #4b5563;
     line-height: 1.5;
+    background: #f9fafb;
+    padding: 8px;
+    border-radius: 8px;
 }
 </style>
 
@@ -309,6 +312,7 @@
    data-id="{{ d.id }}" class="kanban-card card-recebida {% if d.urgente %}card-urgente{% endif %}">
                 <strong>{{ d.get_tipo_display }}</strong>
                 <div class="kanban-meta">{{ d.data_criacao|date:"d/m/Y H:i" }}</div>
+
                 <div class="kanban-resumo">
     {{ d.resumo_ia|truncatechars:120 }}
 </div>
@@ -368,7 +372,7 @@
             {% for d in denuncias_analise %}
            <a href="/painel-rh/{{ d.id }}/"
    draggable="true"
-   data-id="{{ d.id }}" class="kanban-card card-analise {% if d.urgente %}card-urgente{% endif %}">
+   data-id="{{ d.id }}" class="kanban-card card-analise{% if d.urgente %}card-urgente{% endif %}">
                 <strong>{{ d.get_tipo_display }}</strong>
                 <div class="kanban-meta">{{ d.data_criacao|date:"d/m/Y H:i" }}</div>
                 <div class="kanban-resumo">
@@ -519,11 +523,20 @@
         <span class="badge-urgente">Urgente</span>
     {% endif %}
 </p>
+
 <p>
     <strong>Prioridade IA:</strong>
     {{ denuncia_selecionada.prioridade_ia }}
 </p>
         <p><strong>Data:</strong> {{ denuncia_selecionada.data_criacao|date:"d/m/Y H:i" }}</p>
+
+        {% if denuncia_selecionada.resumo_ia %}
+    <strong>Resumo da IA:</strong>
+
+    <div class="descricao-box">
+        {{ denuncia_selecionada.resumo_ia }}
+    </div>
+{% endif %}
 
         <strong>Descrição:</strong>
         <div class="descricao-box">
