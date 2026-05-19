@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import home, criar_denuncia, limpar_notificacoes, sucesso, minhas_denuncias, dashboard, todas_denuncias, painel_rh, marcar_notificacoes_lidas, api_notificacoes, alterar_status_denuncia, analisar_relato, feedback_ia
+from .views import home, criar_denuncia, limpar_notificacoes, sucesso, minhas_denuncias, dashboard, denuncias_arquivadas, painel_rh, marcar_notificacoes_lidas, api_notificacoes, alterar_status_denuncia, analisar_relato, feedback_ia, arquivar_denuncia
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -9,7 +9,7 @@ urlpatterns = [
     path('sucesso/', sucesso, name='sucesso'),
     path('minhas-denuncias/', minhas_denuncias,  name='minhas_denuncias'),
     path('dashboard/', dashboard, name='dashboard'),
-    path('todas-denuncias/', todas_denuncias, name='todas_denuncias'),
+    path('denuncias-arquivadas/', denuncias_arquivadas, name='denuncias_arquivadas'),
     path('painel-rh/', painel_rh, name='painel_rh'),
     path('painel-rh/<int:denuncia_id>/', painel_rh, name='painel_rh_detalhe'),
     path('notificacoes/marcar-lidas/', marcar_notificacoes_lidas, name='marcar_notificacoes_lidas'),
@@ -18,6 +18,8 @@ urlpatterns = [
     path('notificacoes/limpar/', limpar_notificacoes, name='limpar_notificacoes'),
     path('api/analisar-relato/', analisar_relato, name='analisar_relato'),
     path('feedback-ia/', feedback_ia, name='feedback_ia'),
+    path("arquivar-denuncia/<int:denuncia_id>/", arquivar_denuncia, name="arquivar_denuncia"
+),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

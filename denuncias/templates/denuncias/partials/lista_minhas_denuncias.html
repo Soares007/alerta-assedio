@@ -1,0 +1,204 @@
+{% if denuncias %}
+
+    <div class="denuncias-lista">
+
+        {% for d in denuncias %}
+
+            <div class="denuncia-card">
+
+                <div class="denuncia-topo">
+                    <div>
+                        <h3>{{ d.get_tipo_display }}</h3>
+
+                        <span class="badge-status">
+                            {{ d.get_status_display }}
+                        </span>
+
+                        {% if d.anonima %}
+                            <span class="badge-anonima">Anônima</span>
+                        {% else %}
+                            <span class="badge-identificada">Identificada</span>
+                        {% endif %}
+
+                        <span class="badge-gravidade gravidade-{{ d.gravidade }}">
+                            {{ d.get_gravidade_display }}
+                        </span>
+
+                        {% if d.urgente %}
+                            <span class="badge-urgente">Urgente</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="denuncia-data">
+                        <strong>Registrada em:</strong><br>
+                        {{ d.data_criacao|date:"d/m/Y H:i" }}
+                    </div>
+                </div>
+
+                <div class="denuncia-info">
+                    <div class="info-mini">
+                        <span>Setor</span>
+                        <strong>
+                            {% if d.exibir_setor %}
+                                {% if d.setor %}
+                                    {{ d.setor.nome }}
+                                {% else %}
+                                    Não informado
+                                {% endif %}
+                            {% else %}
+                                Ocultado
+                            {% endif %}
+                        </strong>
+                    </div>
+
+                    <div class="info-mini">
+                        <span>Prioridade IA</span>
+                        <strong>{{ d.prioridade_ia }}</strong>
+                    </div>
+
+                    <div class="info-mini">
+                        <span>Arquivada</span>
+                        <strong>
+                            {% if d.arquivada %}
+                                Sim
+                            {% else %}
+                                Não
+                            {% endif %}
+                        </strong>
+                    </div>
+                </div>
+
+                {% if d.resumo_ia %}
+                    <strong>Resumo da IA</strong>
+                    <div class="descricao-box">
+                        {{ d.resumo_ia }}
+                    </div>
+                {% endif %}
+
+                <strong>Descrição</strong>
+                <div class="descricao-box">
+                    {{ d.descricao }}
+                </div>
+
+                <strong>Resposta do RH</strong>
+
+                {% if d.resposta_rh %}
+                    <div class="resposta-box">
+                        {{ d.resposta_rh }}
+                    </div>
+                {% else %}
+                    <div class="sem-resposta">
+                        Sua denúncia ainda está aguardando resposta do RH.
+                    </div>
+                {% endif %}
+
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+    <div class="paginacao-minhas">
+        {% if denuncias.has_previous %}
+            <button type="button" onclick="carregarMinhasDenuncias({{ denuncias.previous_page_number }})">
+                ← Anterior
+            </button>
+        {% endif %}
+
+        <span>
+            Página {{ denuncias.number }} de {{ denuncias.paginator.num_pages }}
+        </span>
+
+        {% if denuncias.has_next %}
+            <button type="button" onclick="carregarMinhasDenuncias({{ denuncias.next_page_number }})">
+                Próxima →
+            </button>
+        {% endif %}
+    </div>
+
+{% else %}
+
+    <div class="empty-minhas">
+        Nenhuma denúncia encontrada.
+    </div>
+
+{% endif %}
+
+
+<script>
+
+    const formMinhas = document.getElementById(
+        'filtrosMinhas'
+    );
+
+    const listaMinhas = document.getElementById(
+        'listaMinhasDenuncias'
+    );
+
+    let timeoutMinhas;
+
+    window.carregarMinhasDenuncias = function(page = 1) {
+
+        const formData = new FormData(formMinhas);
+
+        const params = new URLSearchParams(formData);
+
+        params.set('page', page);
+
+        fetch(`/minhas-denuncias/?${params.toString()}`, {
+
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+
+        })
+
+        .then(response => response.json())
+
+        .then(data => {
+
+            listaMinhas.innerHTML = data.html;
+
+        });
+
+    }
+
+    if (formMinhas) {
+
+        const busca = formMinhas.querySelector(
+            'input[name="busca"]'
+        );
+
+        const selects = formMinhas.querySelectorAll(
+            'select'
+        );
+
+        if (busca) {
+
+            busca.addEventListener('input', () => {
+
+                clearTimeout(timeoutMinhas);
+
+                timeoutMinhas = setTimeout(() => {
+
+                    carregarMinhasDenuncias(1);
+
+                }, 500);
+
+            });
+
+        }
+
+        selects.forEach(select => {
+
+            select.addEventListener('change', () => {
+
+                carregarMinhasDenuncias(1);
+
+            });
+
+        });
+
+    }
+
+</script>

@@ -13,6 +13,9 @@ from django.contrib.auth.models import User
 from django.db.models import Count
 from django.db.models.functions import TruncDate
 from .ia.analisador import analisar_texto
+from django.utils import timezone
+from django.template.loader import render_to_string
+from django.http import JsonResponse
 
 
 def criar_notificacao_usuario(usuario, titulo, mensagem, tipo="geral"):
@@ -100,12 +103,48 @@ def dashboard(request):
 
 @login_required
 def minhas_denuncias(request):
+    busca = request.GET.get("busca", "")
+    status = request.GET.get("status", "")
+    tipo = request.GET.get("tipo", "")
+    page = request.GET.get("page", 1)
+
     denuncias = Denuncia.objects.filter(usuario=request.user).order_by("-data_criacao")
-    return render(request, "denuncias/minhas_denuncias.html", {"denuncias": denuncias})
+
+    if busca:
+        denuncias = denuncias.filter(descricao__icontains=busca)
+
+    if status:
+        denuncias = denuncias.filter(status=status)
+
+    if tipo:
+        denuncias = denuncias.filter(tipo=tipo)
+
+    paginator = Paginator(denuncias, 5)
+    denuncias_paginadas = paginator.get_page(page)
+
+    context = {
+        "denuncias": denuncias_paginadas,
+        "busca": busca,
+        "status_filtro": status,
+        "tipo_filtro": tipo,
+    }
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        html = render_to_string(
+            "denuncias/partials/lista_minhas_denuncias.html",
+            context,
+            request=request
+        )
+
+        return JsonResponse({
+            "html": html
+        })
+
+    return render(request, "denuncias/minhas_denuncias.html", context)
 
 
 @login_required
-def todas_denuncias(request):
+def denuncias_arquivadas(request):
     ui_rh = request.user.groups.filter(name="RH").exists()
     ui_admin = request.user.groups.filter(name="Administrador").exists()
     ui_superuser = request.user.is_superuser
@@ -113,11 +152,45 @@ def todas_denuncias(request):
     if not (ui_rh or ui_admin or ui_superuser):
         return redirect("home")
 
-    denuncias = Denuncia.objects.all().order_by("-data_criacao")
+    busca = request.GET.get("busca", "")
+    tipo = request.GET.get("tipo", "")
+    gravidade = request.GET.get("gravidade", "")
+    pagina = request.GET.get("page", 1)
 
-    return render(request, "denuncias/todas_denuncias.html", {"denuncias": denuncias})
+    denuncias = Denuncia.objects.filter(arquivada=True).order_by("-data_arquivamento")
 
+    if busca:
+        denuncias = denuncias.filter(descricao__icontains=busca)
 
+    if tipo:
+        denuncias = denuncias.filter(tipo=tipo)
+
+    if gravidade:
+        denuncias = denuncias.filter(gravidade=gravidade)
+
+    paginator = Paginator(denuncias, 5)
+    denuncias_paginadas = paginator.get_page(pagina)
+
+    context = {
+        "denuncias": denuncias_paginadas,
+        "busca": busca,
+        "tipo_filtro": tipo,
+        "gravidade_filtro": gravidade,
+    }
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        html = render_to_string(
+            "denuncias/partials/lista_arquivadas.html",
+            context,
+            request=request
+        )
+
+        return JsonResponse({
+            "html": html
+        })
+
+    return render(request, "denuncias/denuncias_arquivadas.html", context)
+    
 @login_required
 def criar_denuncia(request):
     if request.method == "POST":
@@ -216,6 +289,20 @@ def home(request):
 
 @login_required
 def painel_rh(request, denuncia_id=None):
+    from django.utils import timezone
+    from datetime import timedelta
+    
+    limite_arquivamento = timezone.now() - timedelta(days=30)
+    
+    Denuncia.objects.filter(
+        status='resolvida',
+        arquivada=False,
+        data_criacao__lte=limite_arquivamento
+    ).update(
+        arquivada=True,
+        data_arquivamento=timezone.now()
+    )
+    
     eh_rh = request.user.groups.filter(name="RH").exists()
     eh_admin = request.user.groups.filter(name="Administrador").exists()
     eh_superuser = request.user.is_superuser
@@ -235,7 +322,7 @@ def painel_rh(request, denuncia_id=None):
     except ValueError:
         limite = 5
 
-    denuncias_base = Denuncia.objects.all()
+    denuncias_base = Denuncia.objects.filter(arquivada=False)
 
     if tipo:
         denuncias_base = denuncias_base.filter(tipo=tipo)
@@ -550,3 +637,22 @@ def feedback_ia(request):
         'busca': busca,
         'tipo_filtro': tipo,
     })
+    
+@login_required
+def arquivar_denuncia(request, denuncia_id):
+    ui_rh = request.user.groups.filter(name="RH").exists()
+    ui_admin = request.user.groups.filter(name="Administrador").exists()
+    ui_superuser = request.user.is_superuser
+
+    if not (ui_rh or ui_admin or ui_superuser):
+        return redirect("home")
+
+    if request.method == "POST":
+        denuncia = Denuncia.objects.get(id=denuncia_id)
+        denuncia.arquivada = True
+        denuncia.data_arquivamento = timezone.now()
+        denuncia.save()
+
+        messages.success(request, "Denúncia arquivada com sucesso.")
+
+    return redirect("painel_rh")
