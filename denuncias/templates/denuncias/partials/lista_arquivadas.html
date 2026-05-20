@@ -1,43 +1,261 @@
+<style>
+    .creative-anexos {
+        margin: 18px 0 28px;
+    }
+
+    .anexo-main-viewer {
+        position: relative;
+        min-height: 360px;
+        background: #f8fafc;
+        border-radius: 26px;
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .creative-slide {
+        display: none;
+        width: 100%;
+        animation: creativeFade 0.35s ease;
+    }
+
+    .creative-slide.active {
+        display: block;
+    }
+
+    @keyframes creativeFade {
+        from {
+            opacity: 0;
+            transform: scale(0.97);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .creative-media {
+        width: 100%;
+        max-height: 460px;
+        object-fit: contain;
+        background: #111827;
+        display: block;
+    }
+
+    .creative-pdf {
+        width: 100%;
+        height: 460px;
+        border: none;
+        background: white;
+        border-radius: 18px;
+    }
+
+    .creative-file-box,
+    .creative-link-box {
+        min-height: 360px;
+        padding: 40px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        color: #111827;
+    }
+
+    .creative-icon {
+        font-size: 56px;
+        margin-bottom: 15px;
+    }
+
+    .creative-link-box p,
+    .creative-file-box p {
+        color: #6b7280;
+        word-break: break-all;
+        margin: 10px 0 16px;
+    }
+
+    .creative-link-box a,
+    .creative-file-box a {
+        color: #2563eb;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .creative-arrow {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 54px;
+        height: 54px;
+        border-radius: 999px;
+        border: none;
+        background: rgba(17, 24, 39, 0.72);
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+        backdrop-filter: blur(10px);
+        transition: 0.25s;
+        z-index: 5;
+    }
+
+    .creative-arrow:hover {
+        background: #2563eb;
+        transform: translateY(-50%) scale(1.08);
+    }
+
+    .creative-arrow.left {
+        left: 18px;
+    }
+
+    .creative-arrow.right {
+        right: 18px;
+    }
+
+    .creative-tabs {
+        margin-top: 18px;
+        display: flex;
+        justify-content: center;
+        gap: 14px;
+        flex-wrap: wrap;
+        letter-spacing: 6px;
+    }
+
+    .tab-anexo {
+        background: transparent;
+        color: #0f766e;
+        border: none;
+        font-size: 12px;
+        font-weight: 800;
+        padding: 8px 4px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .tab-anexo:hover,
+    .tab-anexo.active {
+        color: #2563eb;
+        transform: translateY(-2px);
+    }
+
+    .empty-slider-state {
+        display: none;
+        position: absolute;
+        inset: 0;
+        background: #f8fafc;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        text-align: center;
+        padding: 30px;
+        z-index: 2;
+    }
+
+    .empty-slider-state.active {
+        display: flex;
+    }
+
+    .empty-slider-icon {
+        font-size: 58px;
+        margin-bottom: 16px;
+    }
+
+    .empty-slider-state strong {
+        color: #111827;
+        font-size: 18px;
+        margin-bottom: 8px;
+    }
+
+    .empty-slider-state p {
+        color: #6b7280;
+        max-width: 320px;
+        line-height: 1.5;
+    }
+</style>
 {% if denuncias %}
 
 <div class="arquivadas-grid">
 
     {% for d in denuncias %}
-        <div class="arquivada-card">
-            <div class="arquivada-top">
-                <div class="arquivada-title">
-                    <h3>{{ d.get_tipo_display }}</h3>
-                    <span class="badge-arquivada">Arquivada</span>
-                    <span class="badge-status">{{ d.get_status_display }}</span>
-                </div>
-
-                <div class="arquivada-data">
-                    <strong>Criada em:</strong><br>
-                    {{ d.data_criacao|date:"d/m/Y H:i" }}
-
-                    {% if d.data_arquivamento %}
-                        <br><br>
-                        <strong>Arquivada em:</strong><br>
-                        {{ d.data_arquivamento|date:"d/m/Y H:i" }}
-                    {% endif %}
-                </div>
+    <div class="arquivada-card">
+        <div class="arquivada-top">
+            <div class="arquivada-title">
+                <h3>{{ d.get_tipo_display }}</h3>
+                <span class="badge-arquivada">Arquivada</span>
+                <span class="badge-status">{{ d.get_status_display }}</span>
             </div>
 
-            <div class="arquivada-info">
+            <div class="arquivada-data">
+                <strong>Criada em:</strong><br>
+                {{ d.data_criacao|date:"d/m/Y H:i" }}
+
+                {% if d.data_arquivamento %}
+                <br><br>
+                <strong>Arquivada em:</strong><br>
+                {{ d.data_arquivamento|date:"d/m/Y H:i" }}
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="arquivada-info">
+            <div class="info-mini">
+                <span>Anonimato</span>
+                <strong>{% if d.anonima %}Anônima{% else %}Identificada{% endif %}</strong>
+            </div>
+
+            <div class="info-mini">
+                <span>Setor</span>
+                <strong>
+                    {% if d.exibir_setor %}
+                    {% if d.setor %}{{ d.setor.nome }}{% else %}Não informado{% endif %}
+                    {% else %}
+                    Ocultado
+                    {% endif %}
+                </strong>
+            </div>
+
+            <div class="info-mini">
+                <span>Gravidade</span>
+                <strong>{{ d.get_gravidade_display }}</strong>
+            </div>
+
+            <div class="info-mini">
+                <span>Prioridade IA</span>
+                <strong>{{ d.prioridade_ia }}</strong>
+            </div>
+        </div>
+
+        {% if d.resumo_ia %}
+        <strong>Resumo da IA</strong>
+        <div class="descricao-arquivada">{{ d.resumo_ia }}</div>
+        {% endif %}
+
+        <strong>Descrição</strong>
+        <div class="descricao-arquivada">{{ d.descricao }}</div>
+
+        <strong>Resposta do RH</strong>
+
+        {% if d.resposta_rh %}
+        <div class="resposta-box">{{ d.resposta_rh }}</div>
+        {% else %}
+        <div class="sem-resposta">Ainda não há resposta registrada para esta denúncia.</div>
+        {% endif %}
+        <button type="button" class="btn-detalhes" onclick="toggleDetalhes(this)">
+            Exibir mais detalhes
+        </button>
+
+        <div class="detalhes-extra">
+
+            <div class="denuncia-info">
                 <div class="info-mini">
-                    <span>Anonimato</span>
-                    <strong>{% if d.anonima %}Anônima{% else %}Identificada{% endif %}</strong>
+                    <span>ID</span>
+                    <strong>#{{ d.id }}</strong>
                 </div>
 
                 <div class="info-mini">
-                    <span>Setor</span>
-                    <strong>
-                        {% if d.exibir_setor %}
-                            {% if d.setor %}{{ d.setor.nome }}{% else %}Não informado{% endif %}
-                        {% else %}
-                            Ocultado
-                        {% endif %}
-                    </strong>
+                    <span>Status</span>
+                    <strong>{{ d.get_status_display }}</strong>
                 </div>
 
                 <div class="info-mini">
@@ -49,46 +267,155 @@
                     <span>Prioridade IA</span>
                     <strong>{{ d.prioridade_ia }}</strong>
                 </div>
+
+                <div class="info-mini">
+                    <span>Urgente</span>
+                    <strong>{% if d.urgente %}Sim{% else %}Não{% endif %}</strong>
+                </div>
+
+                <div class="info-mini">
+                    <span>Arquivada</span>
+                    <strong>{% if d.arquivada %}Sim{% else %}Não{% endif %}</strong>
+                </div>
             </div>
 
-            {% if d.resumo_ia %}
-                <strong>Resumo da IA</strong>
-                <div class="descricao-arquivada">{{ d.resumo_ia }}</div>
-            {% endif %}
+            <strong>Anexos</strong>
 
-            <strong>Descrição</strong>
-            <div class="descricao-arquivada">{{ d.descricao }}</div>
+            {% if d.anexos.all %}
 
-            <strong>Resposta do RH</strong>
+            <div class="creative-anexos" data-slider-id="{{ d.id }}">
 
-            {% if d.resposta_rh %}
-                <div class="resposta-box">{{ d.resposta_rh }}</div>
+                <div class="anexo-main-viewer">
+
+                    {% for anexo in d.anexos.all %}
+                    <div class="creative-slide"
+                        data-tipo="{% if anexo.link %}link{% elif anexo.arquivo %}{% with url=anexo.arquivo.url|lower %}{% if '.jpg' in url or '.jpeg' in url or '.png' in url or '.webp' in url or '.gif' in url %}imagem{% elif '.mp4' in url or '.webm' in url or '.ogg' in url %}video{% elif '.mp3' in url or '.wav' in url %}audio{% elif '.pdf' in url %}pdf{% else %}arquivo{% endif %}{% endwith %}{% endif %}">
+
+                        {% if anexo.arquivo %}
+                        {% with url=anexo.arquivo.url|lower original=anexo.arquivo.url %}
+
+                        {% if ".jpg" in url or ".jpeg" in url or ".png" in url or ".webp" in url or ".gif" in url %}
+                        <img src="{{ original }}" class="creative-media" alt="Anexo">
+                        {% elif ".mp4" in url or ".webm" in url or ".ogg" in url %}
+                        <video controls class="creative-media">
+                            <source src="{{ original }}">
+                        </video>
+                        {% elif ".mp3" in url or ".wav" in url %}
+                        <div class="creative-file-box">
+                            <div class="creative-icon">🎵</div>
+                            <strong>Áudio anexado</strong>
+                            <audio controls style="width:100%; margin-top:15px;">
+                                <source src="{{ original }}">
+                            </audio>
+                        </div>
+                        {% elif ".pdf" in url %}
+                        <object data="{{ original }}" type="application/pdf" class="creative-pdf">
+                            <div class="creative-file-box">
+                                <div class="creative-icon">📄</div>
+                                <strong>PDF anexado</strong>
+                                <p>Não foi possível visualizar o PDF nesta tela.</p>
+                                <a href="{{ original }}" target="_blank">Abrir PDF</a>
+                            </div>
+                        </object>
+                        {% else %}
+                        <div class="creative-file-box">
+                            <div class="creative-icon">📎</div>
+                            <strong>Arquivo anexado</strong>
+                            <p>{{ anexo.arquivo.name }}</p>
+                            <a href="{{ original }}" target="_blank">Abrir arquivo</a>
+                        </div>
+                        {% endif %}
+
+                        {% endwith %}
+                        {% endif %}
+
+                        {% if anexo.link %}
+                        <div class="creative-link-box">
+                            <div class="creative-icon">🔗</div>
+                            <strong>Link enviado</strong>
+                            <p>{{ anexo.link }}</p>
+                            <a href="{{ anexo.link }}" target="_blank">Abrir link</a>
+                        </div>
+                        {% endif %}
+
+                    </div>
+                    {% endfor %}
+
+                    <button type="button" class="creative-arrow left" onclick="mudarAnexoLista(this, -1)">❮</button>
+                    <button type="button" class="creative-arrow right" onclick="mudarAnexoLista(this, 1)">❯</button>
+
+                    <div class="empty-slider-state">
+                        <div class="empty-slider-icon">📂</div>
+
+                        <strong>Nenhum anexo encontrado</strong>
+
+                        <p>
+                            Não existem anexos deste tipo nesta denúncia.
+                        </p>
+                    </div>
+
+                </div>
+
+                <div class="creative-tabs">
+                    <button type="button" onclick="filtrarAnexosLista(this, 'todos')"
+                        class="tab-anexo active">TODOS</button>
+                    <button type="button" onclick="filtrarAnexosLista(this, 'imagem')" class="tab-anexo">IMAGEM</button>
+                    <button type="button" onclick="filtrarAnexosLista(this, 'video')" class="tab-anexo">VÍDEO</button>
+                    <button type="button" onclick="filtrarAnexosLista(this, 'pdf')" class="tab-anexo">PDF</button>
+                    <button type="button" onclick="filtrarAnexosLista(this, 'audio')" class="tab-anexo">ÁUDIO</button>
+                    <button type="button" onclick="filtrarAnexosLista(this, 'link')" class="tab-anexo">LINK</button>
+                </div>
+
+            </div>
+
             {% else %}
-                <div class="sem-resposta">Ainda não há resposta registrada para esta denúncia.</div>
+
+            <div class="sem-resposta">
+                Nenhum anexo enviado.
+            </div>
+
             {% endif %}
+
         </div>
+    </div>
     {% endfor %}
 
 </div>
 
 <div class="paginacao-arquivadas">
     {% if denuncias.has_previous %}
-        <button type="button" onclick="carregarArquivadas({{ denuncias.previous_page_number }})">
-            ← Anterior
-        </button>
+    <button type="button" onclick="carregarArquivadas({{ denuncias.previous_page_number }})">
+        ← Anterior
+    </button>
     {% endif %}
 
     <span>Página {{ denuncias.number }} de {{ denuncias.paginator.num_pages }}</span>
 
     {% if denuncias.has_next %}
-        <button type="button" onclick="carregarArquivadas({{ denuncias.next_page_number }})">
-            Próxima →
-        </button>
+    <button type="button" onclick="carregarArquivadas({{ denuncias.next_page_number }})">
+        Próxima →
+    </button>
     {% endif %}
 </div>
 
 {% else %}
-    <div class="empty-arquivadas">
-        Nenhuma denúncia arquivada encontrada.
-    </div>
+<div class="empty-arquivadas">
+    Nenhuma denúncia arquivada encontrada.
+</div>
 {% endif %}
+
+<script>
+    function toggleDetalhes(botao) {
+        const detalhes = botao.nextElementSibling;
+
+        if (!detalhes) return;
+
+        detalhes.classList.toggle('active');
+
+        if (detalhes.classList.contains('active')) {
+            botao.innerText = 'Ocultar detalhes';
+        } else {
+            botao.innerText = 'Exibir mais detalhes';
+        }
+    }
+</script>

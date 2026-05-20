@@ -269,7 +269,17 @@
             <label>Anexos</label>
 
             <div class="upload-area" id="uploadArea">
-                <input type="file" name="arquivo" id="id_arquivo" class="upload-input">
+                <input type="file"
+    name="arquivo"
+    id="id_arquivo"
+    class="upload-input"
+    multiple
+    accept="
+        image/*,
+        video/*,
+        audio/*,
+        application/pdf
+    " class="upload-input">
 
                 <div class="upload-content">
                     <div class="upload-icon">📎</div>
@@ -416,22 +426,26 @@
     }
 
     const inputArquivo = document.getElementById('id_arquivo');
-    const arquivoSelecionado = document.getElementById('arquivoSelecionado');
+const arquivoSelecionado = document.getElementById('arquivoSelecionado');
 
-    if (inputArquivo && arquivoSelecionado) {
-        inputArquivo.addEventListener('change', () => {
-            if (inputArquivo.files.length > 0) {
-                const arquivo = inputArquivo.files[0];
+if (inputArquivo && arquivoSelecionado) {
+    inputArquivo.addEventListener('change', () => {
+        if (inputArquivo.files.length > 0) {
+            arquivoSelecionado.style.display = 'block';
 
-                arquivoSelecionado.style.display = 'block';
+            const nomes = Array.from(inputArquivo.files)
+                .map(arquivo => `<li>${arquivo.name}</li>`)
+                .join('');
 
-                arquivoSelecionado.innerHTML = `
-                <strong>Arquivo selecionado:</strong><br>
-                ${arquivo.name}
+            arquivoSelecionado.innerHTML = `
+                <strong>${inputArquivo.files.length} arquivo(s) selecionado(s):</strong>
+                <ul style="margin-top:8px; padding-left:20px;">
+                    ${nomes}
+                </ul>
             `;
-            }
-        });
-    }
+        }
+    });
+}
 </script>
 
 {% endblock %}

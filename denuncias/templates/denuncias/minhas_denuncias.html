@@ -245,6 +245,58 @@
         grid-template-columns: 1fr;
     }
 }
+
+.btn-detalhes {
+    margin-top: 14px;
+    background: #111827;
+    color: white;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.detalhes-extra {
+    display: none;
+    margin-top: 18px;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 18px;
+}
+
+.detalhes-extra.active {
+    display: block;
+}
+
+.anexo-preview {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 14px;
+    margin-top: 12px;
+}
+
+.anexo-preview img,
+.anexo-preview video {
+    width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: 12px;
+    background: #111827;
+}
+
+.anexo-preview iframe {
+    width: 100%;
+    height: 420px;
+    border: none;
+    border-radius: 12px;
+}
+
+.link-preview {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 14px;
+    word-break: break-all;
+}
 </style>
 
 <div class="minhas-header">
@@ -291,15 +343,13 @@
     {% include 'denuncias/partials/lista_minhas_denuncias.html' %}
 </div>
 
-{% endblock %}
-
 <script>
     const formMinhas = document.getElementById('filtrosMinhas');
     const listaMinhas = document.getElementById('listaMinhasDenuncias');
 
     let timeoutMinhas;
 
-    function carregarMinhasDenuncias(page = 1) {
+    window.carregarMinhasDenuncias = function(page = 1) {
         const formData = new FormData(formMinhas);
         const params = new URLSearchParams(formData);
 
@@ -313,25 +363,139 @@
         .then(response => response.json())
         .then(data => {
             listaMinhas.innerHTML = data.html;
+            window.iniciarSlidersLista();
         });
+    };
+
+    window.toggleDetalhes = function(botao) {
+        const detalhes = botao.nextElementSibling;
+
+        if (!detalhes) return;
+
+        detalhes.classList.toggle('active');
+
+        botao.innerText = detalhes.classList.contains('active')
+            ? 'Ocultar detalhes'
+            : 'Exibir mais detalhes';
+
+        window.iniciarSlidersLista();
+    };
+
+    window.iniciarSlidersLista = function() {
+        document.querySelectorAll('.creative-anexos').forEach(slider => {
+            slider.dataset.indice = slider.dataset.indice || '0';
+            slider.dataset.filtro = slider.dataset.filtro || 'todos';
+
+            const slides = slider.querySelectorAll('.creative-slide');
+
+            slides.forEach(slide => slide.classList.remove('active'));
+
+            if (slides.length > 0) {
+                slides[0].classList.add('active');
+            }
+        });
+    };
+
+    window.getSlidesVisiveis = function(slider) {
+        const filtro = slider.dataset.filtro || 'todos';
+        const slides = Array.from(slider.querySelectorAll('.creative-slide'));
+
+        return slides.filter(slide => {
+            return filtro === 'todos' || slide.dataset.tipo === filtro;
+        });
+    };
+
+    window.mostrarSlideLista = function(slider, index) {
+
+    const todosSlides = slider.querySelectorAll(
+        '.creative-slide'
+    );
+
+    const visiveis = window.getSlidesVisiveis(
+        slider
+    );
+
+    const estadoVazio = slider.querySelector(
+        '.empty-slider-state'
+    );
+
+    todosSlides.forEach(slide => {
+        slide.classList.remove('active');
+    });
+
+    if (visiveis.length === 0) {
+
+        slider.dataset.indice = '0';
+
+        if (estadoVazio) {
+            estadoVazio.classList.add('active');
+        }
+
+        return;
     }
+
+    if (estadoVazio) {
+        estadoVazio.classList.remove('active');
+    }
+
+    if (index < 0) {
+        index = visiveis.length - 1;
+    }
+
+    if (index >= visiveis.length) {
+        index = 0;
+    }
+
+    slider.dataset.indice = index;
+
+    visiveis[index].classList.add('active');
+
+};
+
+    window.mudarAnexoLista = function(botao, direcao) {
+        const slider = botao.closest('.creative-anexos');
+        const indiceAtual = parseInt(slider.dataset.indice || '0');
+
+        window.mostrarSlideLista(slider, indiceAtual + direcao);
+    };
+
+    window.filtrarAnexosLista = function(botao, tipo) {
+        const slider = botao.closest('.creative-anexos');
+
+        slider.dataset.filtro = tipo;
+        slider.dataset.indice = '0';
+
+        slider.querySelectorAll('.tab-anexo').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        botao.classList.add('active');
+
+        window.mostrarSlideLista(slider, 0);
+    };
 
     if (formMinhas) {
         const busca = formMinhas.querySelector('input[name="busca"]');
         const selects = formMinhas.querySelectorAll('select');
 
-        busca.addEventListener('input', () => {
-            clearTimeout(timeoutMinhas);
+        if (busca) {
+            busca.addEventListener('input', () => {
+                clearTimeout(timeoutMinhas);
 
-            timeoutMinhas = setTimeout(() => {
-                carregarMinhasDenuncias(1);
-            }, 500);
-        });
+                timeoutMinhas = setTimeout(() => {
+                    window.carregarMinhasDenuncias(1);
+                }, 500);
+            });
+        }
 
         selects.forEach(select => {
             select.addEventListener('change', () => {
-                carregarMinhasDenuncias(1);
+                window.carregarMinhasDenuncias(1);
             });
         });
     }
+
+    window.iniciarSlidersLista();
 </script>
+{% endblock %}
+

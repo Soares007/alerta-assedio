@@ -236,15 +236,20 @@ def criar_denuncia(request):
              
             denuncia.save()
             
-            arquivo = form.cleaned_data.get('arquivo')
-            link = form.cleaned_data.get('link')
-
-            if arquivo or link:
+            arquivos = request.FILES.getlist("arquivo")
+            link = form.cleaned_data.get("link")
+           
+            for arquivo in arquivos:
                 AnexoDenuncia.objects.create(
-                     denuncia=denuncia,
-                     arquivo=arquivo,
-                     link=link
-            )
+                    denuncia=denuncia,
+                    arquivo=arquivo
+                )
+                
+                if link:
+                    AnexoDenuncia.objects.create(
+                        denuncia=denuncia,
+                        link=link
+                    )
 
             usuarios_rh = User.objects.filter(groups__name="RH")
             emails_rh = [u.email for u in usuarios_rh if u.email]
