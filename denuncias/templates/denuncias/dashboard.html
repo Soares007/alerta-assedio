@@ -105,35 +105,53 @@
 
 </div>
 
+{{ tipos_labels|json_script:"tipos-labels" }}
+{{ tipos_valores|json_script:"tipos-valores" }}
+
 {{ setores_labels|json_script:"setores-labels" }}
 {{ setores_valores|json_script:"setores-valores" }}
+
 {{ dias_labels|json_script:"dias-labels" }}
 {{ dias_valores|json_script:"dias-valores" }}
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-    const moral = Number("{{ moral }}");
-    const sexual = Number("{{ sexual }}");
-    const abuso = Number("{{ abuso }}");
-
     const recebidas = Number("{{ recebidas }}");
     const analise = Number("{{ analise }}");
     const resolvidas = Number("{{ resolvidas }}");
 
-    const setoresLabels = JSON.parse(document.getElementById('setores-labels').textContent);
-    const setoresValores = JSON.parse(document.getElementById('setores-valores').textContent);
+    const tiposLabels = JSON.parse(
+        document.getElementById('tipos-labels').textContent
+    );
 
-    const diasLabels = JSON.parse(document.getElementById('dias-labels').textContent);
-    const diasValores = JSON.parse(document.getElementById('dias-valores').textContent);
+    const tiposValores = JSON.parse(
+        document.getElementById('tipos-valores').textContent
+    );
+
+    const setoresLabels = JSON.parse(
+        document.getElementById('setores-labels').textContent
+    );
+
+    const setoresValores = JSON.parse(
+        document.getElementById('setores-valores').textContent
+    );
+
+    const diasLabels = JSON.parse(
+        document.getElementById('dias-labels').textContent
+    );
+
+    const diasValores = JSON.parse(
+        document.getElementById('dias-valores').textContent
+    );
 
     new Chart(document.getElementById('graficoTipos'), {
         type: 'bar',
         data: {
-            labels: ['Assédio Moral', 'Assédio Sexual', 'Abuso de Poder'],
+            labels: tiposLabels,
             datasets: [{
                 label: 'Quantidade',
-                data: [moral, sexual, abuso]
+                data: tiposValores
             }]
         },
         options: {

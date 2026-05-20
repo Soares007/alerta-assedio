@@ -62,13 +62,18 @@ def dashboard(request):
 
     total = denuncias.count()
 
-    moral = denuncias.filter(tipo="moral").count()
-    sexual = denuncias.filter(tipo="sexual").count()
-    abuso = denuncias.filter(tipo="abuso").count()
-
     recebidas = denuncias.filter(status="recebida").count()
     analise = denuncias.filter(status="analise").count()
     resolvidas = denuncias.filter(status="resolvida").count()
+
+    tipos_dict = dict(Denuncia.TIPOS)
+
+    por_tipo = (
+        denuncias
+        .values("tipo")
+        .annotate(total=Count("id"))
+        .order_by("-total")
+    )
 
     por_setor = (
         denuncias.filter(setor__isnull=False)
@@ -86,12 +91,19 @@ def dashboard(request):
 
     context = {
         "total": total,
-        "moral": moral,
-        "sexual": sexual,
-        "abuso": abuso,
         "recebidas": recebidas,
         "analise": analise,
         "resolvidas": resolvidas,
+
+        "tipos_labels": [
+            tipos_dict.get(item["tipo"], item["tipo"])
+            for item in por_tipo
+        ],
+        "tipos_valores": [
+            item["total"]
+            for item in por_tipo
+        ],
+
         "setores_labels": [item["setor__nome"] for item in por_setor],
         "setores_valores": [item["total"] for item in por_setor],
         "dias_labels": [item["dia"].strftime("%d/%m") for item in por_dia],
@@ -99,7 +111,6 @@ def dashboard(request):
     }
 
     return render(request, "denuncias/dashboard.html", context)
-
 
 @login_required
 def minhas_denuncias(request):
@@ -430,6 +441,15 @@ def painel_rh(request, denuncia_id=None):
                 return redirect("painel_rh")
         else:
             form = RespostaDenunciaForm(instance=denuncia_selecionada)
+            
+    
+    tipos_filtro = [
+        {
+            "valor": valor,
+            "nome": nome
+        }
+        for valor, nome in Denuncia.TIPOS
+    ]
 
     return render(
         request,
@@ -440,7 +460,7 @@ def painel_rh(request, denuncia_id=None):
             "denuncias_resolvidas": denuncias_resolvidas,
             "denuncia_selecionada": denuncia_selecionada,
             "form": form,
-            "tipo_filtro": tipo,
+            "tipos_filtro": tipos_filtro,
             "anonima_filtro": anonima,
             "data_inicio": data_inicio,
             "data_fim": data_fim,
