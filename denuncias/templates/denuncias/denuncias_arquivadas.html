@@ -31,7 +31,7 @@
         border-radius: 16px;
         padding: 18px;
         margin-bottom: 24px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
 
     .limpar-arquivadas {
@@ -61,7 +61,7 @@
         border: 1px solid #e5e7eb;
         border-radius: 18px;
         padding: 22px;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.04);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
         border-left: 5px solid #6b7280;
         transition: 0.2s;
     }
@@ -226,6 +226,58 @@
             grid-template-columns: 1fr;
         }
     }
+
+    .btn-detalhes {
+        margin-top: 14px;
+        background: #111827;
+        color: white;
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-weight: 600;
+    }
+
+    .detalhes-extra {
+        display: none;
+        margin-top: 18px;
+        border-top: 1px solid #e5e7eb;
+        padding-top: 18px;
+    }
+
+    .detalhes-extra.active {
+        display: block;
+    }
+
+    .anexo-preview {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 14px;
+        margin-top: 12px;
+    }
+
+    .anexo-preview img,
+    .anexo-preview video {
+        width: 100%;
+        max-height: 360px;
+        object-fit: contain;
+        border-radius: 12px;
+        background: #111827;
+    }
+
+    .anexo-preview iframe {
+        width: 100%;
+        height: 420px;
+        border: none;
+        border-radius: 12px;
+    }
+
+    .link-preview {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 14px;
+        word-break: break-all;
+    }
 </style>
 
 <div class="arquivadas-header">
@@ -243,49 +295,37 @@
 
 <form id="filtrosArquivadas" class="filtros-arquivadas">
 
-    <input
-        type="text"
-        name="busca"
-        placeholder="Pesquisar descrição..."
-        value="{{ busca }}"
-    >
+    <input type="text" name="busca" placeholder="Pesquisar descrição..." value="{{ busca }}">
 
     <select name="tipo">
 
         <option value="">Todos os tipos</option>
 
-        <option value="moral"
-            {% if tipo_filtro == 'moral' %}selected{% endif %}>
+        <option value="moral" {% if tipo_filtro=='moral' %}selected{% endif %}>
             Assédio moral
         </option>
 
-        <option value="sexual"
-            {% if tipo_filtro == 'sexual' %}selected{% endif %}>
+        <option value="sexual" {% if tipo_filtro=='sexual' %}selected{% endif %}>
             Assédio sexual
         </option>
 
-        <option value="abuso"
-            {% if tipo_filtro == 'abuso' %}selected{% endif %}>
+        <option value="abuso" {% if tipo_filtro=='abuso' %}selected{% endif %}>
             Abuso de poder
         </option>
 
-        <option value="discriminacao"
-            {% if tipo_filtro == 'discriminacao' %}selected{% endif %}>
+        <option value="discriminacao" {% if tipo_filtro=='discriminacao' %}selected{% endif %}>
             Discriminação
         </option>
 
-        <option value="ameaca"
-            {% if tipo_filtro == 'ameaca' %}selected{% endif %}>
+        <option value="ameaca" {% if tipo_filtro=='ameaca' %}selected{% endif %}>
             Ameaça
         </option>
 
-        <option value="violencia"
-            {% if tipo_filtro == 'violencia' %}selected{% endif %}>
+        <option value="violencia" {% if tipo_filtro=='violencia' %}selected{% endif %}>
             Violência
         </option>
 
-        <option value="outros"
-            {% if tipo_filtro == 'outros' %}selected{% endif %}>
+        <option value="outros" {% if tipo_filtro=='outros' %}selected{% endif %}>
             Outros
         </option>
 
@@ -295,23 +335,19 @@
 
         <option value="">Todas gravidades</option>
 
-        <option value="baixa"
-            {% if gravidade_filtro == 'baixa' %}selected{% endif %}>
+        <option value="baixa" {% if gravidade_filtro=='baixa' %}selected{% endif %}>
             Baixa
         </option>
 
-        <option value="media"
-            {% if gravidade_filtro == 'media' %}selected{% endif %}>
+        <option value="media" {% if gravidade_filtro=='media' %}selected{% endif %}>
             Média
         </option>
 
-        <option value="alta"
-            {% if gravidade_filtro == 'alta' %}selected{% endif %}>
+        <option value="alta" {% if gravidade_filtro=='alta' %}selected{% endif %}>
             Alta
         </option>
 
-        <option value="critica"
-            {% if gravidade_filtro == 'critica' %}selected{% endif %}>
+        <option value="critica" {% if gravidade_filtro=='critica' %}selected{% endif %}>
             Crítica
         </option>
 
@@ -350,11 +386,12 @@
             }
         })
 
-        .then(response => response.json())
+            .then(response => response.json())
 
-        .then(data => {
-            listaArquivadas.innerHTML = data.html;
-        });
+            .then(data => {
+                listaArquivadas.innerHTML = data.html;
+                window.iniciarSlidersLista();
+            });
     }
 
     if (formArquivadas) {
@@ -385,6 +422,103 @@
 
     }
 
+
+    window.iniciarSlidersLista = function () {
+        document.querySelectorAll('.creative-anexos').forEach(slider => {
+            slider.dataset.indice = '0';
+            slider.dataset.filtro = 'todos';
+
+            const slides = slider.querySelectorAll('.creative-slide');
+
+            slides.forEach(slide => {
+                slide.classList.remove('active');
+            });
+
+            if (slides.length > 0) {
+                slides[0].classList.add('active');
+            }
+        });
+    };
+
+    window.getSlidesVisiveis = function (slider) {
+        const filtro = slider.dataset.filtro || 'todos';
+        const slides = Array.from(slider.querySelectorAll('.creative-slide'));
+
+        return slides.filter(slide => {
+            return filtro === 'todos' || slide.dataset.tipo === filtro;
+        });
+    };
+
+   window.mostrarSlideLista = function(slider, index) {
+
+    const todosSlides = slider.querySelectorAll(
+        '.creative-slide'
+    );
+
+    const visiveis = window.getSlidesVisiveis(
+        slider
+    );
+
+    const estadoVazio = slider.querySelector(
+        '.empty-slider-state'
+    );
+
+    todosSlides.forEach(slide => {
+        slide.classList.remove('active');
+    });
+
+    if (visiveis.length === 0) {
+
+        slider.dataset.indice = '0';
+
+        if (estadoVazio) {
+            estadoVazio.classList.add('active');
+        }
+
+        return;
+    }
+
+    if (estadoVazio) {
+        estadoVazio.classList.remove('active');
+    }
+
+    if (index < 0) {
+        index = visiveis.length - 1;
+    }
+
+    if (index >= visiveis.length) {
+        index = 0;
+    }
+
+    slider.dataset.indice = index;
+
+    visiveis[index].classList.add('active');
+
+};
+
+    window.mudarAnexoLista = function (botao, direcao) {
+        const slider = botao.closest('.creative-anexos');
+        const indiceAtual = parseInt(slider.dataset.indice || '0');
+
+        window.mostrarSlideLista(slider, indiceAtual + direcao);
+    };
+
+    window.filtrarAnexosLista = function (botao, tipo) {
+        const slider = botao.closest('.creative-anexos');
+
+        slider.dataset.filtro = tipo;
+        slider.dataset.indice = '0';
+
+        slider.querySelectorAll('.tab-anexo').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        botao.classList.add('active');
+
+        window.mostrarSlideLista(slider, 0);
+    };
+
+    window.iniciarSlidersLista();
 </script>
 
 {% endblock %}

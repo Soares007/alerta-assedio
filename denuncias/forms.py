@@ -1,8 +1,33 @@
 from django import forms
 from .models import Denuncia
 
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleFileField(forms.FileField):
+    def clean(self, data, initial=None):
+        if not data:
+            return []
+
+        if isinstance(data, (list, tuple)):
+            return data
+
+        return [data]
+
 class DenunciaForm(forms.ModelForm):
-    arquivo = forms.FileField(required=False)
+    arquivo = MultipleFileField(
+        required=False,
+        widget=MultipleFileInput(attrs={
+             'multiple': True,
+             'accept': (
+                    'image/*',
+                    'video/*,'
+                    'audio/*,'
+                    'application/pdf',
+                )
+        })
+    )
     link = forms.URLField(required=False)
 
     class Meta:
