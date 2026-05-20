@@ -247,11 +247,14 @@
     <div>
         <label>Tipo</label>
         <select name="tipo">
-            <option value="">Todos</option>
-            <option value="moral" {% if tipo_filtro == 'moral' %}selected{% endif %}>Assédio Moral</option>
-            <option value="sexual" {% if tipo_filtro == 'sexual' %}selected{% endif %}>Assédio Sexual</option>
-            <option value="abuso" {% if tipo_filtro == 'abuso' %}selected{% endif %}>Abuso de Poder</option>
-        </select>
+    <option value="">Todos</option>
+
+    {% for tipo in tipos_filtro %}
+        <option value="{{ tipo.valor }}" {% if tipo_filtro == tipo.valor %}selected{% endif %}>
+            {{ tipo.nome }}
+        </option>
+    {% endfor %}
+</select>
     </div>
 
     <div>
