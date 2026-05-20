@@ -28,7 +28,12 @@ class DenunciaForm(forms.ModelForm):
                 )
         })
     )
-    link = forms.URLField(required=False)
+    link = forms.CharField(
+        required=False,
+        widget=forms.URLInput(attrs={
+            'placeholder': 'https://exemplo.com/arquivo-ou-evidencia',
+        })
+    )
 
     class Meta:
         model = Denuncia

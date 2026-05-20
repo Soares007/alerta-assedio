@@ -150,24 +150,25 @@ def gerar_resumo(texto):
     if not texto or not texto.strip():
         return ""
 
-    texto_lower = texto.lower()
+    texto_limpo = " ".join(texto.strip().split())
+    texto_lower = texto_limpo.lower()
 
-    if "obrigou" in texto_lower or "tarefa pessoal" in texto_lower or "fora da minha função" in texto_lower:
+    if "obrig" in texto_lower or "tarefa pessoal" in texto_lower or "fora da função" in texto_lower:
         return "Funcionário relata possível abuso de autoridade envolvendo imposição de tarefa inadequada ou fora de sua função."
 
-    if "ameaça" in texto_lower or "ameaçou" in texto_lower or "medo" in texto_lower:
+    if "ameaç" in texto_lower or "medo" in texto_lower or "intimid" in texto_lower:
         return "Funcionário relata situação envolvendo ameaça, intimidação ou medo no ambiente de trabalho."
 
-    if "humilhou" in texto_lower or "humilha" in texto_lower or "xingou" in texto_lower:
-        return "Funcionário relata possível constrangimento, humilhação ou exposição no ambiente de trabalho."
+    if "humilh" in texto_lower or "xing" in texto_lower or "constrang" in texto_lower:
+        return "Funcionário relata possível humilhação, constrangimento ou exposição no ambiente de trabalho."
 
-    if "corpo" in texto_lower or "sexual" in texto_lower or "tocou" in texto_lower:
+    if "sexual" in texto_lower or "corpo" in texto_lower or "toc" in texto_lower:
         return "Funcionário relata possível conduta inadequada de natureza sexual."
 
-    frases = texto.split('.')
-    frases_limpas = [frase.strip() for frase in frases if frase.strip()]
+    if "discrimin" in texto_lower or "preconceito" in texto_lower or "racismo" in texto_lower:
+        return "Funcionário relata possível discriminação, preconceito ou tratamento desigual."
 
-    if len(frases_limpas) > 1:
-        return frases_limpas[0] + "."
+    if len(texto_limpo) <= 180:
+        return texto_limpo
 
-    return "Relato registrado para análise do RH."
+    return texto_limpo[:180] + "..."

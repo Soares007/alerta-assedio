@@ -12,12 +12,16 @@ from django.http import JsonResponse
 from django.contrib.auth.models import User
 from django.db.models import Count
 from django.db.models.functions import TruncDate
-from .ia.analisador import analisar_texto
 from django.utils import timezone
 from django.template.loader import render_to_string
 from django.http import JsonResponse
 import os
 from django.contrib import messages
+from .ia.gemini_api import (
+    analisar_relato_com_fallback,
+    gerar_resumo_com_fallback,
+    analisar_link_com_fallback
+)
 
 
 def criar_notificacao_usuario(usuario, titulo, mensagem, tipo="geral"):
@@ -213,10 +217,9 @@ def criar_denuncia(request):
             denuncia = form.save(commit=False)
             denuncia.usuario = request.user
             
-            resultado_ia = analisar_texto(denuncia.descricao)
+            resultado_ia = analisar_relato_com_fallback(denuncia.descricao)
             
-            from .ia.analisador import gerar_resumo
-            denuncia.resumo_ia = gerar_resumo(
+            denuncia.resumo_ia = gerar_resumo_com_fallback(
                 denuncia.descricao
             )
             
@@ -239,7 +242,13 @@ def criar_denuncia(request):
             denuncia.save()
             
             arquivos = request.FILES.getlist("arquivo")
-            link = form.cleaned_data.get("link")
+            link = form.cleaned_data.get("link").strip()
+            
+            if link:
+                 if not link.startswith(('http://', 'https://')):
+                    link = 'http://' + link
+                    
+                 resultado_link = analisar_link_com_fallback(link)   
            
             for arquivo in arquivos:
                 valido, erro = validar_anexo(arquivo)
@@ -255,9 +264,13 @@ def criar_denuncia(request):
                 )
                 
                 if link:
+                    resultado_link = analisar_link_com_fallback(link)
+                    
                     AnexoDenuncia.objects.create(
                         denuncia=denuncia,
-                        link=link
+                        link=link,
+                        status_link=resultado_link.get("status"),
+                        motivo_link=resultado_link.get("motivo")
                     )
 
             usuarios_rh = User.objects.filter(groups__name="RH")

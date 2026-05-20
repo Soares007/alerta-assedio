@@ -72,9 +72,23 @@ class AnexoDenuncia(models.Model):
     arquivo = models.FileField(upload_to="anexos_denuncias/", blank=True, null=True)
     link = models.URLField(blank=True, null=True)
     data_envio = models.DateTimeField(auto_now_add=True)
+    STATUS_LINK = [
+    ('seguro', 'Aparentemente seguro'),
+    ('suspeito', 'Suspeito'),
+    ('perigoso', 'Potencialmente perigoso'),
+]
+    status_link = models.CharField(
+        max_length=20,
+        choices=STATUS_LINK,
+        blank=True,
+        null=True
+    )
+    motivo_status_link = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"Anexo da denúncia {self.denuncia.id}"
+    
+    motivo_link = models.TextField(blank=True, null=True)   
 
 
 class Notificacao(models.Model):
