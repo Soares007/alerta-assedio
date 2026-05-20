@@ -222,6 +222,17 @@
         font-size: 14px;
         animation: aparecerIA 0.3s ease;
     }
+    .link-anexo-box {
+    margin-top: 16px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 14px;
+}
+
+.link-anexo-box input {
+    margin-top: 8px;
+}
 </style>
 
 <div class="denuncia-header">
@@ -266,43 +277,43 @@
             </div>
 
             {% if form.arquivo %}
-            <label>Anexos</label>
+            <label>Anexos e evidências</label>
 
-            <div class="upload-area" id="uploadArea">
-                <input type="file"
-    name="arquivo"
-    id="id_arquivo"
-    class="upload-input"
-    multiple
-    accept="
-        image/*,
-        video/*,
-        audio/*,
-        application/pdf
-    " class="upload-input">
+<div class="upload-area" id="uploadArea">
+    <input
+        type="file"
+        name="arquivo"
+        id="id_arquivo"
+        class="upload-input"
+        multiple
+        accept="image/*,video/*,audio/*,application/pdf"
+    >
 
-                <div class="upload-content">
-                    <div class="upload-icon">📎</div>
+    <div class="upload-content">
+        <div class="upload-icon">📎</div>
 
-                    <div class="upload-title">
-                        Clique para anexar um arquivo
-                    </div>
+        <div class="upload-title">
+            Clique para anexar arquivos
+        </div>
 
-                    <div class="upload-subtitle">
-                        Imagens, vídeos, PDFs e documentos
-                    </div>
-                </div>
-            </div>
+        <div class="upload-subtitle">
+            Imagens, vídeos, áudios e PDFs
+        </div>
+    </div>
+</div>
 
-            <div id="arquivoSelecionado" class="arquivo-selecionado"></div>
-            {% endif %}
+<div id="arquivoSelecionado" class="arquivo-selecionado"></div>
 
-            {% if form.link %}
-            <label for="id_link">Link de apoio</label>
-            {{ form.link }}
-            <p class="helper-text">
-                Cole aqui links de prints, vídeos, documentos ou outras evidências externas.
-            </p>
+<div class="link-anexo-box">
+    <label for="id_link">Adicionar link como anexo</label>
+
+    {{ form.link }}
+
+    <p class="helper-text">
+        Cole links de prints, vídeos, documentos ou outras evidências externas.
+        O sistema analisará o link antes de exibir ao RH.
+    </p>
+</div>
             {% endif %}
 
             <button type="submit" class="btn-enviar">Enviar denúncia</button>

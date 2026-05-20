@@ -55,6 +55,11 @@ textos = [
     "me mandaram fazer serviço particular do chefe",
     "fui obrigado a fazer algo fora da minha função sob ameaça",
     "meu chefe exigiu tarefa pessoal sem remuneração",
+    "meu supervisor me obrigou a fazer uma tarefa pessoal",
+    "me mandaram fazer serviço particular do chefe",
+    "fui obrigado a fazer algo fora da minha função sob ameaça",
+    "meu chefe exigiu tarefa pessoal sem remuneração",
+    "me obrigaram a fazer tarefa pessoal do meu superior",
 ]
 
 rotulos = [
@@ -93,6 +98,11 @@ rotulos = [
     "outros",
     "outros",
     "outros",
+    "abuso",
+    "abuso",
+    "abuso",
+    "abuso",
+    "abuso",
     "abuso",
     "abuso",
     "abuso",

@@ -379,6 +379,32 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    isolation: isolate;
+}
+
+.creative-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 54px;
+    height: 54px;
+    border-radius: 999px;
+    border: none;
+    background: rgba(17, 24, 39, 0.72);
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: 0.25s;
+    z-index: 20;
+}
+
+.creative-arrow.left {
+    left: 18px;
+}
+
+.creative-arrow.right {
+    right: 18px;
 }
 
 .creative-slide {
@@ -537,6 +563,31 @@
     color: #6b7280;
     max-width: 320px;
     line-height: 1.5;
+}
+
+.link-security {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 12px;
+    font-size: 14px;
+}
+
+.link-seguro {
+    background: #ecfdf5;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.link-suspeito {
+    background: #fefce8;
+    color: #854d0e;
+    border: 1px solid #fde68a;
+}
+
+.link-perigoso {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
 }
 </style>
 
@@ -894,13 +945,25 @@
                 {% endif %}
 
                 {% if anexo.link %}
-                    <div class="creative-link-box">
-                        <div class="creative-icon">🔗</div>
-                        <strong>Link enviado</strong>
-                        <p>{{ anexo.link }}</p>
-                        <a href="{{ anexo.link }}" target="_blank">Abrir link</a>
-                    </div>
-                {% endif %}
+    <div class="creative-link-box">
+        <div class="creative-icon">🔗</div>
+
+        <strong>Link enviado</strong>
+
+        <p>{{ anexo.link }}</p>
+
+        {% if anexo.status_link %}
+            <div class="link-security link-{{ anexo.status_link }}">
+                <strong>{{ anexo.get_status_link_display }}</strong>
+                <p>{{ anexo.motivo_link }}</p>
+            </div>
+        {% endif %}
+
+        <a href="{{ anexo.link }}" target="_blank">
+            Abrir link
+        </a>
+    </div>
+{% endif %}
 
             </div>
         {% endfor %}
