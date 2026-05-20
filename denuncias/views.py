@@ -16,6 +16,8 @@ from .ia.analisador import analisar_texto
 from django.utils import timezone
 from django.template.loader import render_to_string
 from django.http import JsonResponse
+import os
+from django.contrib import messages
 
 
 def criar_notificacao_usuario(usuario, titulo, mensagem, tipo="geral"):
@@ -240,9 +242,16 @@ def criar_denuncia(request):
             link = form.cleaned_data.get("link")
            
             for arquivo in arquivos:
+                valido, erro = validar_anexo(arquivo)
+                if not valido:
+                    denuncia.delete()
+                    messages.error(request, erro)
+                    return render(request, "denuncias/form.html", {"form": form})
+                
                 AnexoDenuncia.objects.create(
                     denuncia=denuncia,
                     arquivo=arquivo
+                
                 )
                 
                 if link:
@@ -681,3 +690,43 @@ def arquivar_denuncia(request, denuncia_id):
         messages.success(request, "Denúncia arquivada com sucesso.")
 
     return redirect("painel_rh")
+
+def validar_anexo(arquivo):
+    extensoes_permitidas = [
+        '.jpg', '.jpeg', '.png', '.webp', '.gif',
+        '.mp4', '.webm', '.ogg',
+        '.mp3', '.wav',
+        '.pdf'
+    ]
+
+    tipos_permitidos = [
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'image/gif',
+        'video/mp4',
+        'video/webm',
+        'video/ogg',
+        'audio/mpeg',
+        'audio/wav',
+        'audio/ogg',
+        'application/pdf'
+    ]
+
+    tamanho_maximo = 20 * 1024 * 1024
+
+    nome = arquivo.name.lower()
+    extensao = os.path.splitext(nome)[1]
+    tipo = arquivo.content_type
+    tamanho = arquivo.size
+
+    if extensao not in extensoes_permitidas:
+        return False, f'O arquivo "{arquivo.name}" possui uma extensão não permitida.'
+
+    if tipo not in tipos_permitidos:
+        return False, f'O arquivo "{arquivo.name}" possui um tipo inválido.'
+
+    if tamanho > tamanho_maximo:
+        return False, f'O arquivo "{arquivo.name}" ultrapassa o limite de 20MB.'
+
+    return True, ''
