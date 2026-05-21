@@ -216,62 +216,75 @@ def criar_denuncia(request):
         if form.is_valid():
             denuncia = form.save(commit=False)
             denuncia.usuario = request.user
-            
+
             resultado_ia = analisar_relato_com_fallback(denuncia.descricao)
             
+
             denuncia.resumo_ia = gerar_resumo_com_fallback(
                 denuncia.descricao
             )
             
+            print("IA UTILIZADA RELATO:", resultado_ia.get("origem_ia"))
+            print("RESUMO GERADO:", denuncia.resumo_ia)          
+
             denuncia.tipo = resultado_ia.get("tipo") or denuncia.tipo
             denuncia.gravidade = resultado_ia.get("gravidade", "baixa")
+
             prioridades = {
                 "baixa": 1,
                 "media": 2,
                 "alta": 3,
                 "critica": 4,
             }
-            denuncia.prioridade_ia = prioridades.get(denuncia.gravidade, 1)
+
+            denuncia.prioridade_ia = prioridades.get(
+                denuncia.gravidade,
+                1
+            )
+
             denuncia.urgente = resultado_ia.get("urgente", False)
-            
-            perfil = PerfilUsuario.objects.filter(usuario=request.user).first()
-            
+
+            perfil = PerfilUsuario.objects.filter(
+                usuario=request.user
+            ).first()
+
             if perfil:
-             denuncia.setor = perfil.setor
-             
+                denuncia.setor = perfil.setor
+
             denuncia.save()
-            
+
             arquivos = request.FILES.getlist("arquivo")
-            link = form.cleaned_data.get("link").strip()
-            
-            if link:
-                 if not link.startswith(('http://', 'https://')):
-                    link = 'http://' + link
-                    
-                 resultado_link = analisar_link_com_fallback(link)   
-           
+            link = form.cleaned_data.get("link", "").strip()
+
             for arquivo in arquivos:
                 valido, erro = validar_anexo(arquivo)
+
                 if not valido:
                     denuncia.delete()
                     messages.error(request, erro)
-                    return render(request, "denuncias/form.html", {"form": form})
-                
+                    return render(
+                        request,
+                        "denuncias/form.html",
+                        {"form": form}
+                    )
+
                 AnexoDenuncia.objects.create(
                     denuncia=denuncia,
                     arquivo=arquivo
-                
                 )
-                
-                if link:
-                    resultado_link = analisar_link_com_fallback(link)
-                    
-                    AnexoDenuncia.objects.create(
-                        denuncia=denuncia,
-                        link=link,
-                        status_link=resultado_link.get("status"),
-                        motivo_link=resultado_link.get("motivo")
-                    )
+
+            if link:
+                if not link.startswith(("http://", "https://")):
+                    link = "https://" + link
+
+                resultado_link = analisar_link_com_fallback(link)
+
+                AnexoDenuncia.objects.create(
+                    denuncia=denuncia,
+                    link=link,
+                    status_link=resultado_link.get("status"),
+                    motivo_link=resultado_link.get("motivo")
+                )
 
             usuarios_rh = User.objects.filter(groups__name="RH")
             emails_rh = [u.email for u in usuarios_rh if u.email]
@@ -607,10 +620,8 @@ def limpar_notificacoes(request):
 
     return JsonResponse({"status": "erro"}, status=400)
 
-from .ia.analisador import analisar_texto
 
 
-@login_required
 def analisar_relato(request):
     if request.method != 'POST':
         return JsonResponse({
@@ -622,7 +633,7 @@ def analisar_relato(request):
 
     texto = request.POST.get('texto', '')
 
-    resultado = analisar_texto(texto)
+    resultado = analisar_relato_com_fallback(texto)
 
     if not isinstance(resultado, dict):
         resultado = {
@@ -743,3 +754,4 @@ def validar_anexo(arquivo):
         return False, f'O arquivo "{arquivo.name}" ultrapassa o limite de 20MB.'
 
     return True, ''
+

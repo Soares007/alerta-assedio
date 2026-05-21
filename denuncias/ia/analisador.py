@@ -148,27 +148,83 @@ def analisar_texto(texto):
     
 def gerar_resumo(texto):
     if not texto or not texto.strip():
-        return ""
+        return "Relato com informações insuficientes para gerar resumo."
 
     texto_limpo = " ".join(texto.strip().split())
     texto_lower = texto_limpo.lower()
 
-    if "obrig" in texto_lower or "tarefa pessoal" in texto_lower or "fora da função" in texto_lower:
-        return "Funcionário relata possível abuso de autoridade envolvendo imposição de tarefa inadequada ou fora de sua função."
+    letras_unicas = len(set(texto_lower.replace(" ", "")))
 
-    if "ameaç" in texto_lower or "medo" in texto_lower or "intimid" in texto_lower:
-        return "Funcionário relata situação envolvendo ameaça, intimidação ou medo no ambiente de trabalho."
+    if len(texto_limpo) < 20 or letras_unicas <= 4:
+        return "Relato aparenta estar incompleto ou sem informações suficientes para resumo."
 
-    if "humilh" in texto_lower or "xing" in texto_lower or "constrang" in texto_lower:
-        return "Funcionário relata possível humilhação, constrangimento ou exposição no ambiente de trabalho."
+    regras_resumo = [
+        {
+            "palavras": ["obrig", "tarefa pessoal", "fora da função", "fora da minha função", "desvio de função", "sem remuneração"],
+            "resumo": "Funcionário relata possível abuso de autoridade envolvendo imposição de tarefa inadequada, pessoal ou fora de sua função."
+        },
+        {
+            "palavras": ["ameaç", "medo", "intimid", "coação", "pressionou", "chantagem"],
+            "resumo": "Funcionário relata situação envolvendo ameaça, intimidação, pressão ou medo no ambiente de trabalho."
+        },
+        {
+            "palavras": ["humilh", "xing", "ridicular", "constrang", "gritou", "ofendeu", "exposição"],
+            "resumo": "Funcionário relata possível humilhação, constrangimento, ofensa ou exposição no ambiente de trabalho."
+        },
+        {
+            "palavras": ["sexual", "tocou", "corpo", "convite", "insinuação", "assediou", "comentário sobre meu corpo"],
+            "resumo": "Funcionário relata possível conduta inadequada de natureza sexual no ambiente de trabalho."
+        },
+        {
+            "palavras": ["discrimin", "preconceito", "racismo", "homofobia", "idade", "religião", "aparência", "deficiência"],
+            "resumo": "Funcionário relata possível discriminação, preconceito ou tratamento desigual."
+        },
+        {
+            "palavras": ["agress", "bateu", "empurrou", "violência", "machucou", "sangue"],
+            "resumo": "Funcionário relata possível agressão física ou situação de violência."
+        },
+        {
+            "palavras": ["isolado", "isolamento", "deixado de lado", "excluído", "ignorado", "ninguém fala comigo"],
+            "resumo": "Funcionário relata possível isolamento, exclusão ou tratamento de indiferença pela equipe."
+        },
+        {
+            "palavras": ["perseguição", "persegue", "marcação", "pega no meu pé", "sempre comigo"],
+            "resumo": "Funcionário relata possível perseguição ou tratamento recorrente direcionado contra ele."
+        },
+    ]
 
-    if "sexual" in texto_lower or "corpo" in texto_lower or "toc" in texto_lower:
-        return "Funcionário relata possível conduta inadequada de natureza sexual."
+    for regra in regras_resumo:
+        if any(palavra in texto_lower for palavra in regra["palavras"]):
+            return regra["resumo"]
 
-    if "discrimin" in texto_lower or "preconceito" in texto_lower or "racismo" in texto_lower:
-        return "Funcionário relata possível discriminação, preconceito ou tratamento desigual."
+    frases = texto_limpo.replace("!", ".").replace("?", ".").split(".")
 
-    if len(texto_limpo) <= 180:
-        return texto_limpo
+    frases_limpas = [
+        frase.strip()
+        for frase in frases
+        if frase.strip()
+    ]
+
+    palavras_importantes = [
+        "chefe", "supervisor", "gerente", "colega", "equipe",
+        "humilhação", "ameaça", "medo", "obrigou", "assédio",
+        "discriminação", "abuso", "violência", "isolado",
+        "constrangimento", "perseguição", "xingamento"
+    ]
+
+    frases_relevantes = []
+
+    for frase in frases_limpas:
+        frase_lower = frase.lower()
+
+        if any(palavra in frase_lower for palavra in palavras_importantes):
+            frases_relevantes.append(frase)
+
+    if frases_relevantes:
+        resumo = ". ".join(frases_relevantes[:2])
+        return resumo + "."
+
+    if len(texto_limpo) <= 120:
+        return "Funcionário relata uma situação que precisa ser analisada pelo RH com base nas informações fornecidas."
 
     return texto_limpo[:180] + "..."
