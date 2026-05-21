@@ -177,3 +177,62 @@ Retorne APENAS JSON válido:
         resultado["origem_ia"] = "local"
 
         return resultado
+    
+def responder_chat_local(contexto):
+        contexto_lower = contexto.lower()
+
+        if "link" in contexto_lower or "site" in contexto_lower:
+            return "A IA local identificou que há menção a link ou site. Recomenda-se verificar se o endereço parece confiável antes de abrir."
+        if "resposta" in contexto_lower and "rh" in contexto_lower:
+            return "A IA local recomenda analisar a resposta do RH com atenção e, se ainda houver dúvidas, continuar a conversa pelo chat."
+        if "ameaça" in contexto_lower or "ameaçou" in contexto_lower:
+            return "A IA local identificou possível situação de ameaça. É recomendado que o RH avalie o caso com prioridade."
+        if "humilhação" in contexto_lower or "humilhou" in contexto_lower:
+            return "A IA local identificou possível situação de humilhação ou constrangimento no ambiente de trabalho."
+        
+        return "A IA local pode ajudar a resumir a situação, esclarecer dúvidas gerais e indicar que o caso deve ser analisado cuidadosamente pelo RH."
+
+    
+def responder_chat_com_fallback(contexto):
+    try:
+        print("TENTANDO USAR GEMINI NO CHAT...")
+
+        prompt = f"""
+Você é uma IA assistente de RH em um sistema de denúncias.
+
+Sua função é ajudar de forma neutra, respeitosa e objetiva.
+
+Regras:
+- Não tome decisão final.
+- Não acuse ninguém.
+- Não substitua análise humana do RH.
+- Explique de forma clara.
+- Se faltar informação, diga que faltam detalhes.
+- Seja cuidadosa com temas sensíveis.
+
+Contexto:
+{contexto}
+
+Retorne APENAS JSON válido:
+
+{{
+  "resposta": "texto da resposta da IA"
+}}
+"""
+
+        resultado = chamar_gemini(prompt)
+
+        print("IA USADA NO CHAT: GEMINI")
+
+        return resultado.get(
+            "resposta",
+            "Não consegui gerar uma resposta clara com as informações disponíveis."
+        )
+
+    except Exception as erro:
+        print("IA USADA NO CHAT: LOCAL")
+        print("ERRO GEMINI CHAT:", erro)
+
+        return responder_chat_local(contexto)
+    
+   

@@ -20,7 +20,8 @@ from django.contrib import messages
 from .ia.gemini_api import (
     analisar_relato_com_fallback,
     gerar_resumo_com_fallback,
-    analisar_link_com_fallback
+    analisar_link_com_fallback,
+    responder_chat_com_fallback
 )
 import re
 
@@ -788,6 +789,48 @@ def chat_denuncia(request, denuncia_id):
 
     if request.method == "POST":
         acao = request.POST.get("acao")
+        
+        if acao == "ia":
+            mensagens_chat = chat.mensagens.order_by("criado_em")[:20]
+            
+            contexto = f"""
+            
+        DENÚNCIA:
+        Tipo: {denuncia.get_tipo_display()}
+        Resumo IA: {denuncia.resumo_ia}
+        Descrição: {denuncia.descricao}
+        
+        CONVERSA:
+        """
+            for m in mensagens_chat:
+                contexto += f"""
+        [{m.tipo_autor.upper()}]
+        {m.mensagem}
+        """
+        
+        resposta_ia = responder_chat_com_fallback(contexto)
+         
+        MensagemChatDenuncia.objects.create(
+            chat=chat,
+            tipo_autor="ia",
+            mensagem=resposta_ia,
+            anonimo=True
+        )
+        
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            mensagens = chat.mensagens.all().order_by("criado_em")
+            
+            html = render_to_string(
+                "denuncias/partials/chat_mensagens.html",
+                {"mensagens": mensagens},
+                request=request
+            )
+            
+            return JsonResponse({
+                "html": html
+            }) 
+            return redirect("chat_denuncia", denuncia_id=denuncia.id) 
+                                         
 
         if acao == "mensagem":
             mensagem_texto = request.POST.get("mensagem", "").strip()
