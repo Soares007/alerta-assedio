@@ -591,6 +591,24 @@
     color: #991b1b;
     border: 1px solid #fecaca;
 }
+
+.btn-chat-denuncia {
+    margin-top: 14px;
+    background: #2563eb;
+    color: white;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: fit-content;
+}
+
+.btn-chat-denuncia:hover {
+    background: #1d4ed8;
+}
 </style>
 
 <form method="get" class="filtros-rh">
@@ -1004,8 +1022,13 @@
         <form method="post">
             {% csrf_token %}
             {{ form.as_p }}
-            <button type="submit">Salvar resposta</button>
+            <button type="submit" class="btn-chat-denuncia"> <span>🗃️</span> Salvar resposta</button>
         </form>
+        <a href="/chat-denuncia/{{ denuncia_selecionada.id }}/" class="btn-chat-denuncia">
+             <span>💬</span>
+    Chat Denúncia {{ denuncia_selecionada.id }}
+</a>
+
         {% if denuncia_selecionada.status == 'resolvida' %}
     <form method="post" action="/arquivar-denuncia/{{ denuncia_selecionada.id }}/" style="margin-top:15px;">
         {% csrf_token %}

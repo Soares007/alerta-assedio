@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from .forms import DenunciaForm, RespostaDenunciaForm, FeedbackIA
-from .models import Denuncia, Notificacao,  AnexoDenuncia, PerfilUsuario
+from .models import Denuncia, Notificacao,  AnexoDenuncia, PerfilUsuario,  ChatDenuncia, MensagemChatDenuncia, AnexoMensagemChat
 from django.contrib import messages
 from django.http import JsonResponse
 from django.core.mail import EmailMultiAlternatives
@@ -22,6 +22,7 @@ from .ia.gemini_api import (
     gerar_resumo_com_fallback,
     analisar_link_com_fallback
 )
+import re
 
 
 def criar_notificacao_usuario(usuario, titulo, mensagem, tipo="geral"):
@@ -755,3 +756,188 @@ def validar_anexo(arquivo):
 
     return True, ''
 
+def extrair_primeiro_link(texto):
+    padrao = r'(https?://[^\s]+|www\.[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}[^\s]*)'
+    resultado = re.search(padrao, texto)
+
+    if not resultado:
+        return None
+
+    link = resultado.group(0).strip()
+
+    if not link.startswith(("http://", "https://")):
+        link = "https://" + link
+
+    return link
+
+@login_required
+def chat_denuncia(request, denuncia_id):
+    denuncia = Denuncia.objects.get(id=denuncia_id)
+
+    eh_rh = request.user.groups.filter(name="RH").exists()
+    eh_admin = request.user.groups.filter(name="Administrador").exists()
+    eh_superuser = request.user.is_superuser
+    eh_dono = denuncia.usuario == request.user
+
+    if not (eh_dono or eh_rh or eh_admin or eh_superuser):
+        return redirect("home")
+
+    chat, criado = ChatDenuncia.objects.get_or_create(
+        denuncia=denuncia
+    )
+
+    if request.method == "POST":
+        acao = request.POST.get("acao")
+
+        if acao == "mensagem":
+            mensagem_texto = request.POST.get("mensagem", "").strip()
+            arquivos = request.FILES.getlist("arquivo")
+
+            if mensagem_texto or arquivos:
+                if eh_rh or eh_admin or eh_superuser:
+                    tipo_autor = "rh"
+                    anonimo = True
+                else:
+                    tipo_autor = "funcionario"
+                    anonimo = denuncia.anonima
+
+                link_detectado = extrair_primeiro_link(mensagem_texto)
+
+                status_link = None
+                motivo_link = None
+
+                if link_detectado:
+                    resultado_link = analisar_link_com_fallback(link_detectado)
+                    status_link = resultado_link.get("status")
+                    motivo_link = resultado_link.get("motivo")
+
+                mensagem = MensagemChatDenuncia.objects.create(
+                    chat=chat,
+                    usuario=request.user,
+                    tipo_autor=tipo_autor,
+                    mensagem=mensagem_texto,
+                    anonimo=anonimo,
+                    link_detectado=link_detectado,
+                    status_link=status_link,
+                    motivo_link=motivo_link
+                )
+
+                for arquivo in arquivos:
+                    valido, erro = validar_anexo(arquivo)
+
+                    if valido:
+                        AnexoMensagemChat.objects.create(
+                            mensagem=mensagem,
+                            arquivo=arquivo
+                        )
+                    else:
+                        messages.error(request, erro)
+
+                if tipo_autor == "rh" and denuncia.usuario:
+                    criar_notificacao_usuario(
+                        usuario=denuncia.usuario,
+                        titulo=f"Nova mensagem na denúncia #{denuncia.id}",
+                        mensagem=f"O RH enviou uma mensagem sobre: {denuncia.resumo_ia or denuncia.get_tipo_display()}",
+                        tipo="chat_denuncia",
+                    )
+
+                elif tipo_autor == "funcionario":
+                    usuarios_rh = User.objects.filter(groups__name="RH")
+
+                    for usuario_rh in usuarios_rh:
+                        criar_notificacao_usuario(
+                            usuario=usuario_rh,
+                            titulo=f"Nova mensagem na denúncia #{denuncia.id}",
+                            mensagem=f"Nova mensagem no chat da denúncia #{denuncia.id}.",
+                            tipo="chat_denuncia",
+                        )
+
+            if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                mensagens = chat.mensagens.all().order_by("criado_em")
+
+                html = render_to_string(
+                    "denuncias/partials/chat_mensagens.html",
+                    {"mensagens": mensagens},
+                    request=request
+                )
+
+                return JsonResponse({
+                    "html": html
+                })
+
+            return redirect("chat_denuncia", denuncia_id=denuncia.id)
+
+        if acao == "resposta_rh" and (eh_rh or eh_admin or eh_superuser):
+            resposta_rh = request.POST.get("resposta_rh", "").strip()
+            status = request.POST.get("status", denuncia.status)
+            arquivar = request.POST.get("arquivar") == "sim"
+
+            denuncia.resposta_rh = resposta_rh
+            denuncia.status = status
+
+            if arquivar:
+                denuncia.arquivada = True
+                denuncia.data_arquivamento = timezone.now()
+
+            denuncia.save()
+
+            MensagemChatDenuncia.objects.create(
+                chat=chat,
+                usuario=request.user,
+                tipo_autor="sistema",
+                mensagem=f"O RH atualizou a denúncia para: {denuncia.get_status_display()}."
+            )
+
+            if resposta_rh:
+                MensagemChatDenuncia.objects.create(
+                    chat=chat,
+                    usuario=request.user,
+                    tipo_autor="rh",
+                    mensagem=resposta_rh,
+                    anonimo=True
+                )
+
+            if denuncia.usuario:
+                criar_notificacao_usuario(
+                    usuario=denuncia.usuario,
+                    titulo="Denúncia atualizada pelo RH",
+                    mensagem="Sua denúncia recebeu uma resposta ou atualização de status.",
+                    tipo="chat_denuncia",
+                )
+
+            messages.success(request, "Resposta do RH registrada com sucesso.")
+
+            if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                mensagens = chat.mensagens.all().order_by("criado_em")
+
+                html = render_to_string(
+                    "denuncias/partials/chat_mensagens.html",
+                    {"mensagens": mensagens},
+                    request=request
+                )
+
+                return JsonResponse({
+                    "html": html
+                })
+
+            return redirect("chat_denuncia", denuncia_id=denuncia.id)
+
+    mensagens = chat.mensagens.all().order_by("criado_em")
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        html = render_to_string(
+            "denuncias/partials/chat_mensagens.html",
+            {"mensagens": mensagens},
+            request=request
+        )
+
+        return JsonResponse({
+            "html": html
+        })
+
+    return render(request, "denuncias/chat_denuncia.html", {
+        "denuncia": denuncia,
+        "chat": chat,
+        "mensagens": mensagens,
+        "eh_rh": eh_rh or eh_admin or eh_superuser,
+    })
