@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import home, criar_denuncia, limpar_notificacoes, sucesso, minhas_denuncias, dashboard, denuncias_arquivadas, painel_rh, marcar_notificacoes_lidas, api_notificacoes, alterar_status_denuncia, analisar_relato, feedback_ia, arquivar_denuncia
+from .views import home, criar_denuncia, limpar_notificacoes, sucesso, minhas_denuncias, dashboard, denuncias_arquivadas, painel_rh, marcar_notificacoes_lidas, api_notificacoes, alterar_status_denuncia, analisar_relato, feedback_ia, arquivar_denuncia, chat_denuncia
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -18,8 +18,8 @@ urlpatterns = [
     path('notificacoes/limpar/', limpar_notificacoes, name='limpar_notificacoes'),
     path('api/analisar-relato/', analisar_relato, name='analisar_relato'),
     path('feedback-ia/', feedback_ia, name='feedback_ia'),
-    path("arquivar-denuncia/<int:denuncia_id>/", arquivar_denuncia, name="arquivar_denuncia"
-),
+    path("arquivar-denuncia/<int:denuncia_id>/", arquivar_denuncia, name="arquivar_denuncia"),
+    path("chat-denuncia/<int:denuncia_id>/", chat_denuncia, name="chat_denuncia"),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

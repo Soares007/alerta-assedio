@@ -172,6 +172,23 @@
         max-width: 320px;
         line-height: 1.5;
     }
+.btn-chat-denuncia {
+    margin-top: 14px;
+    background: #2563eb;
+    color: white;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: fit-content;
+}
+
+.btn-chat-denuncia:hover {
+    background: #1d4ed8;
+}
 </style>
 {% if denuncias %}
 
@@ -266,6 +283,13 @@
             Sua denúncia ainda está aguardando resposta do RH.
         </div>
         {% endif %}
+
+        {% if d.resposta_rh %}
+    <a href="/chat-denuncia/{{ d.id }}/" class="btn-chat-denuncia">
+    <span>💬</span>
+    Chat Denúncia {{ d.id }}
+</a>
+{% endif %}
 
         <button type="button" class="btn-detalhes" onclick="toggleDetalhes(this)">
             Exibir mais detalhes
