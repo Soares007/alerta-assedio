@@ -5,6 +5,8 @@ import google.generativeai as genai
 from .analisador import analisar_texto, gerar_resumo
 from .analisador_links import analisar_link
 
+print("ARQUIVO GEMINI_API FOI CARREGADO")
+
 
 genai.configure(
     api_key=os.getenv("GEMINI_API_KEY")
@@ -20,19 +22,38 @@ def chamar_gemini(prompt):
 
     texto = resposta.text.strip()
 
+    print("RESPOSTA BRUTA GEMINI:")
+    print(texto)
+
     texto = texto.replace("```json", "")
     texto = texto.replace("```", "")
+    texto = texto.strip()
 
-    return json.loads(texto)
+    inicio = texto.find("{")
+    fim = texto.rfind("}") + 1
+
+    if inicio == -1 or fim == -1:
+        raise Exception("Gemini não retornou JSON válido")
+
+    texto_json = texto[inicio:fim]
+
+    print("JSON EXTRAÍDO:")
+    print(texto_json)
+
+    return json.loads(texto_json)
 
 
 def analisar_relato_com_fallback(texto):
     try:
+        print("TENTANDO USAR GEMINI PARA ANALISAR RELATO...")
 
         prompt = f"""
 Você é uma IA especializada em RH, assédio e compliance corporativo.
 
 Analise o relato abaixo.
+
+Se o texto for aleatório, sem sentido, muito curto ou insuficiente, classifique como "outros",
+com gravidade "baixa", urgente false e confiança baixa.
 
 Relato:
 {texto}
@@ -49,28 +70,44 @@ Retorne APENAS JSON válido:
 }}
 """
 
-        return chamar_gemini(prompt)
+        resultado = chamar_gemini(prompt)
+        resultado["origem_ia"] = "gemini"
 
-    except Exception:
-        return analisar_texto(texto)
+        print("IA USADA NO RELATO: GEMINI")
+
+        return resultado
+
+    except Exception as erro:
+        print("IA USADA NO RELATO: LOCAL")
+        print("ERRO GEMINI RELATO:", erro)
+
+        resultado = analisar_texto(texto)
+        resultado["origem_ia"] = "local"
+
+        return resultado
 
 
 def gerar_resumo_com_fallback(texto):
     try:
+        print("TENTANDO USAR GEMINI PARA RESUMO...")
 
         prompt = f"""
+Você é uma IA especializada em RH.
+
 Crie um resumo profissional para RH do relato abaixo.
 
-O resumo deve:
-- ser curto
-- profissional
-- claro
-- objetivo
+Regras:
+- O resumo deve ser curto.
+- O resumo deve ser profissional.
+- O resumo deve ser claro e objetivo.
+- Não repita simplesmente o texto original.
+- Se o texto for aleatório, sem sentido, muito curto ou insuficiente, diga que o relato possui informações insuficientes para gerar resumo.
+- Não invente fatos que não estejam no relato.
 
 Relato:
 {texto}
 
-Retorne APENAS JSON:
+Retorne APENAS JSON válido:
 
 {{
   "resumo": "texto"
@@ -79,17 +116,25 @@ Retorne APENAS JSON:
 
         resultado = chamar_gemini(prompt)
 
-        return resultado.get(
-            "resumo",
-            gerar_resumo(texto)
-        )
+        resumo = resultado.get("resumo")
 
-    except Exception:
+        print("IA USADA NO RESUMO: GEMINI")
+
+        if resumo:
+            return resumo
+
+        return "Relato com informações insuficientes para gerar resumo."
+
+    except Exception as erro:
+        print("IA USADA NO RESUMO: LOCAL")
+        print("ERRO GEMINI RESUMO:", erro)
+
         return gerar_resumo(texto)
 
 
 def analisar_link_com_fallback(link):
     try:
+        print("TENTANDO USAR GEMINI PARA ANALISAR LINK...")
 
         prompt = f"""
 Você é uma IA de segurança corporativa.
@@ -103,11 +148,13 @@ Analise apenas:
 - estrutura
 - sinais suspeitos
 - engenharia social
+- extensão de arquivo
+- tentativa de parecer site confiável
 
 Link:
 {link}
 
-Retorne APENAS JSON:
+Retorne APENAS JSON válido:
 
 {{
   "status": "seguro | suspeito | perigoso",
@@ -115,7 +162,18 @@ Retorne APENAS JSON:
 }}
 """
 
-        return chamar_gemini(prompt)
+        resultado = chamar_gemini(prompt)
+        resultado["origem_ia"] = "gemini"
 
-    except Exception:
-        return analisar_link(link)
+        print("IA USADA NO LINK: GEMINI")
+
+        return resultado
+
+    except Exception as erro:
+        print("IA USADA NO LINK: LOCAL")
+        print("ERRO GEMINI LINK:", erro)
+
+        resultado = analisar_link(link)
+        resultado["origem_ia"] = "local"
+
+        return resultado

@@ -464,8 +464,10 @@
 .creative-link-box p,
 .creative-file-box p {
     color: #6b7280;
-    word-break: break-all;
     margin: 10px 0 16px;
+    overflow-wrap: break-word;
+    word-break: normal;
+    line-height: 1.6;
 }
 
 .creative-link-box a,
@@ -565,11 +567,11 @@
     line-height: 1.5;
 }
 
-.link-security {
-    margin-top: 14px;
-    padding: 12px;
-    border-radius: 12px;
-    font-size: 14px;
+.link-security p {
+    margin-top: 6px;
+    line-height: 1.5;
+    overflow-wrap: break-word;
+    word-break: normal;
 }
 
 .link-seguro {
