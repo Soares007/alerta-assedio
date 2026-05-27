@@ -787,50 +787,69 @@ def chat_denuncia(request, denuncia_id):
         denuncia=denuncia
     )
 
+    def retornar_chat_json():
+        mensagens = chat.mensagens.all().order_by("criado_em")
+
+        html = render_to_string(
+            "denuncias/partials/chat_mensagens.html",
+            {"mensagens": mensagens},
+            request=request
+        )
+
+        return JsonResponse({
+            "html": html
+        })
+
     if request.method == "POST":
         acao = request.POST.get("acao")
-        
+
         if acao == "ia":
-            mensagens_chat = chat.mensagens.order_by("criado_em")[:20]
-            
-            contexto = f"""
-            
-        DENÚNCIA:
-        Tipo: {denuncia.get_tipo_display()}
-        Resumo IA: {denuncia.resumo_ia}
-        Descrição: {denuncia.descricao}
-        
-        CONVERSA:
-        """
-            for m in mensagens_chat:
-                contexto += f"""
-        [{m.tipo_autor.upper()}]
-        {m.mensagem}
-        """
-        
-        resposta_ia = responder_chat_com_fallback(contexto)
-         
-        MensagemChatDenuncia.objects.create(
-            chat=chat,
-            tipo_autor="ia",
-            mensagem=resposta_ia,
-            anonimo=True
-        )
-        
-        if request.headers.get("x-requested-with") == "XMLHttpRequest":
-            mensagens = chat.mensagens.all().order_by("criado_em")
-            
-            html = render_to_string(
-                "denuncias/partials/chat_mensagens.html",
-                {"mensagens": mensagens},
-                request=request
-            )
-            
-            return JsonResponse({
-                "html": html
-            }) 
-            return redirect("chat_denuncia", denuncia_id=denuncia.id) 
-                                         
+            tipo_pedido = request.POST.get("tipo_pedido", "geral")
+             
+            try:
+                mensagens_chat = chat.mensagens.all().order_by("criado_em")[:20]
+
+                contexto = f"""
+DENÚNCIA:
+ID: {denuncia.id}
+Tipo: {denuncia.get_tipo_display()}
+Status: {denuncia.get_status_display()}
+Gravidade: {denuncia.get_gravidade_display()}
+Resumo IA: {denuncia.resumo_ia or "Sem resumo"}
+Descrição: {denuncia.descricao}
+
+PEDIDO DO USUÁRIO:
+{tipo_pedido}
+"""
+
+                for m in mensagens_chat:
+                    contexto += f"""
+[{m.tipo_autor.upper()}]
+{m.mensagem}
+"""
+
+                resposta_ia = responder_chat_com_fallback(contexto)
+
+                MensagemChatDenuncia.objects.create(
+                    chat=chat,
+                    usuario=None,
+                    tipo_autor="ia",
+                    mensagem=resposta_ia,
+                    anonimo=True
+                )
+
+            except Exception as erro:
+                print("ERRO AO GERAR RESPOSTA IA NO CHAT:", erro)
+
+                MensagemChatDenuncia.objects.create(
+                    chat=chat,
+                    usuario=None,
+                    tipo_autor="ia",
+                    mensagem="Não consegui responder agora. Tente novamente em alguns instantes.",
+                    anonimo=True
+                )
+
+            return retornar_chat_json()
 
         if acao == "mensagem":
             mensagem_texto = request.POST.get("mensagem", "").strip()
@@ -896,17 +915,7 @@ def chat_denuncia(request, denuncia_id):
                         )
 
             if request.headers.get("x-requested-with") == "XMLHttpRequest":
-                mensagens = chat.mensagens.all().order_by("criado_em")
-
-                html = render_to_string(
-                    "denuncias/partials/chat_mensagens.html",
-                    {"mensagens": mensagens},
-                    request=request
-                )
-
-                return JsonResponse({
-                    "html": html
-                })
+                return retornar_chat_json()
 
             return redirect("chat_denuncia", denuncia_id=denuncia.id)
 
@@ -943,40 +952,22 @@ def chat_denuncia(request, denuncia_id):
             if denuncia.usuario:
                 criar_notificacao_usuario(
                     usuario=denuncia.usuario,
-                    titulo="Denúncia atualizada pelo RH",
-                    mensagem="Sua denúncia recebeu uma resposta ou atualização de status.",
+                    titulo=f"Denúncia #{denuncia.id} atualizada pelo RH",
+                    mensagem=f"Sua denúncia recebeu uma resposta: {denuncia.resumo_ia or denuncia.get_tipo_display()}",
                     tipo="chat_denuncia",
                 )
 
             messages.success(request, "Resposta do RH registrada com sucesso.")
 
             if request.headers.get("x-requested-with") == "XMLHttpRequest":
-                mensagens = chat.mensagens.all().order_by("criado_em")
-
-                html = render_to_string(
-                    "denuncias/partials/chat_mensagens.html",
-                    {"mensagens": mensagens},
-                    request=request
-                )
-
-                return JsonResponse({
-                    "html": html
-                })
+                return retornar_chat_json()
 
             return redirect("chat_denuncia", denuncia_id=denuncia.id)
 
     mensagens = chat.mensagens.all().order_by("criado_em")
 
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
-        html = render_to_string(
-            "denuncias/partials/chat_mensagens.html",
-            {"mensagens": mensagens},
-            request=request
-        )
-
-        return JsonResponse({
-            "html": html
-        })
+        return retornar_chat_json()
 
     return render(request, "denuncias/chat_denuncia.html", {
         "denuncia": denuncia,
