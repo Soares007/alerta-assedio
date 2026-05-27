@@ -636,6 +636,120 @@
         #6d28d9
     );
 }
+
+.ia-chat-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.btn-ia {
+    background: #7c3aed;
+}
+
+.chat-input-area {
+    background: #ffffff;
+    border-top: 1px solid #e5e7eb;
+    padding: 14px;
+}
+
+.chat-compose {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    padding: 10px;
+}
+
+.chat-compose textarea {
+    flex: 1;
+    min-height: 44px;
+    max-height: 130px;
+    border: none;
+    background: transparent;
+    resize: none;
+    outline: none;
+    padding: 10px;
+}
+
+.chat-action-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 999px;
+    background: #e5e7eb;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 18px;
+}
+
+.chat-action-btn input {
+    display: none;
+}
+
+.ia-action {
+    background: #f5f3ff;
+    color: #7c3aed;
+}
+
+.send-btn {
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 999px;
+    background: #2563eb;
+    color: white;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 800;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ia-options-grid {
+    display: grid;
+    gap: 12px;
+    padding: 22px;
+}
+
+.ia-options-grid button {
+    text-align: left;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 15px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.ia-options-grid button:hover {
+    background: #f5f3ff;
+    border-color: #c4b5fd;
+    transform: translateY(-2px);
+}
+
+.ia-options-grid strong {
+    display: block;
+    color: #111827;
+    margin-bottom: 5px;
+}
+
+.ia-options-grid span {
+    color: #6b7280;
+    font-size: 13px;
+}
+
+.ia-modal-box {
+    max-width: 560px;
+}
 </style>
 
 <div class="chat-page">
@@ -720,31 +834,43 @@
 
         <form method="post" enctype="multipart/form-data" class="chat-form" id="chatForm">
             {% csrf_token %}
-            <input type="hidden" name="acao" value="mensagem">
+           <div class="chat-input-area">
 
-            <div class="chat-input-wrapper">
-                <textarea name="mensagem" id="mensagemChat" placeholder="Digite sua mensagem..."></textarea>
+    <div id="previewArquivosChat" class="preview-arquivos-chat"></div>
 
-                <button
-    type="button"
-    class="btn-chat btn-ia"
-    id="btnAjudaIA"
->
-    IA
-</button>
+    <div class="chat-compose">
+        <label class="chat-action-btn" title="Anexar arquivo">
+            📎
+            <input
+                type="file"
+                name="arquivo"
+                id="arquivoChat"
+                multiple
+                accept="image/*,video/*,audio/*,application/pdf"
+            >
+        </label>
 
-                <label class="chat-file-label">
-                    📎
-                    <<input type="file" name="arquivo" id="arquivoChat" multiple
-                        accept="image/*,video/*,audio/*,application/pdf">
-                </label>
+        <textarea
+            name="mensagem"
+            id="mensagemChat"
+            placeholder="Digite sua mensagem..."
+        ></textarea>
 
-                <button type="submit" class="btn-chat">
-                    Enviar
-                </button>
-            </div>
+        <button
+            type="button"
+            class="chat-action-btn ia-action"
+            onclick="abrirModalIA()"
+            title="Assistente IA"
+        >
+            ✨
+        </button>
 
-            <div id="previewArquivosChat" class="preview-arquivos-chat"></div>
+        <button type="submit" class="send-btn">
+            ➤
+        </button>
+    </div>
+
+</div>
         </form>
     </section>
 
@@ -788,6 +914,42 @@
 </div>
 {% endif %}
 
+<div class="modal-bg" id="modalIA">
+    <div class="modal-box ia-modal-box">
+        <h3>Assistente IA</h3>
+
+        <div class="ia-options-grid">
+            <button type="button" onclick="chamarIAChat('resumir')">
+                <strong>Resumir conversa</strong>
+                <span>Gerar um resumo do histórico do chat.</span>
+            </button>
+
+            <button type="button" onclick="chamarIAChat('explicar')">
+                <strong>Explicar denúncia</strong>
+                <span>Explicar o contexto de forma simples.</span>
+            </button>
+
+            {% if eh_rh %}
+            <button type="button" onclick="chamarIAChat('sugerir_resposta')">
+                <strong>Sugerir resposta</strong>
+                <span>Ajudar o RH a escrever uma resposta profissional.</span>
+            </button>
+            {% endif %}
+
+            <button type="button" onclick="chamarIAChat('proximos_passos')">
+                <strong>Próximos passos</strong>
+                <span>Sugerir ações cuidadosas para acompanhamento.</span>
+            </button>
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" class="btn-chat btn-cancelar" onclick="fecharModalIA()">
+                Fechar
+            </button>
+        </div>
+    </div>
+</div>
+
 <div class="media-modal" id="mediaModal">
     <div class="media-modal-content">
         <button type="button" class="media-modal-close" onclick="fecharMediaModal()">
@@ -805,7 +967,6 @@
         const mensagemChat = document.getElementById('mensagemChat');
         const arquivoChat = document.getElementById('arquivoChat');
         const previewArquivosChat = document.getElementById('previewArquivosChat');
-        const btnAjudaIA = document.getElementById('btnAjudaIA');
 
         let arquivosSelecionadosChat = [];
 
@@ -1012,27 +1173,41 @@
             });
         }
 
-        if (btnAjudaIA) {
-    btnAjudaIA.addEventListener('click', function() {
+        window.abrirModalIA = function () {
+    document.getElementById('modalIA').classList.add('active');
+};
 
-        const formData = new FormData();
-        formData.append('acao', 'ia');
+window.fecharModalIA = function () {
+    document.getElementById('modalIA').classList.remove('active');
+};
 
-        fetch(window.location.href, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            chatMensagens.innerHTML = data.html;
-            scrollChatFinal();
-        });
+window.chamarIAChat = function(tipoPedido) {
+    fecharModalIA();
+
+    const formData = new FormData();
+    formData.append('acao', 'ia');
+    formData.append('tipo_pedido', tipoPedido);
+
+    fetch(window.location.href, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        chatMensagens.innerHTML = data.html;
+        scrollChatFinal();
+    })
+    .catch(error => {
+        console.error(error);
+        alert('Não foi possível chamar a IA agora.');
     });
-}
+};
+
+       
 
         window.abrirModalResposta = function () {
             document.getElementById('modalResposta').classList.add('active');
@@ -1052,6 +1227,12 @@
                     modalResposta.classList.remove('active');
                 }
             }
+
+            const modalIA = document.getElementById('modalIA');
+
+if (modalIA) {
+    modalIA.classList.remove('active');
+}
         });
 
         setInterval(atualizarChat, 4000);
