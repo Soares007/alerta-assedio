@@ -20,8 +20,7 @@ from django.contrib import messages
 from .ia.gemini_api import (
     analisar_relato_com_fallback,
     gerar_resumo_com_fallback,
-    analisar_link_com_fallback,
-    responder_chat_com_fallback
+    analisar_link_com_fallback
 )
 import re
 
@@ -792,7 +791,9 @@ def chat_denuncia(request, denuncia_id):
 
         html = render_to_string(
             "denuncias/partials/chat_mensagens.html",
-            {"mensagens": mensagens},
+            {
+                "mensagens": mensagens  
+            },
             request=request
         )
 
@@ -802,54 +803,6 @@ def chat_denuncia(request, denuncia_id):
 
     if request.method == "POST":
         acao = request.POST.get("acao")
-
-        if acao == "ia":
-            tipo_pedido = request.POST.get("tipo_pedido", "geral")
-             
-            try:
-                mensagens_chat = chat.mensagens.all().order_by("criado_em")[:20]
-
-                contexto = f"""
-DENÚNCIA:
-ID: {denuncia.id}
-Tipo: {denuncia.get_tipo_display()}
-Status: {denuncia.get_status_display()}
-Gravidade: {denuncia.get_gravidade_display()}
-Resumo IA: {denuncia.resumo_ia or "Sem resumo"}
-Descrição: {denuncia.descricao}
-
-PEDIDO DO USUÁRIO:
-{tipo_pedido}
-"""
-
-                for m in mensagens_chat:
-                    contexto += f"""
-[{m.tipo_autor.upper()}]
-{m.mensagem}
-"""
-
-                resposta_ia = responder_chat_com_fallback(contexto)
-
-                MensagemChatDenuncia.objects.create(
-                    chat=chat,
-                    usuario=None,
-                    tipo_autor="ia",
-                    mensagem=resposta_ia,
-                    anonimo=True
-                )
-
-            except Exception as erro:
-                print("ERRO AO GERAR RESPOSTA IA NO CHAT:", erro)
-
-                MensagemChatDenuncia.objects.create(
-                    chat=chat,
-                    usuario=None,
-                    tipo_autor="ia",
-                    mensagem="Não consegui responder agora. Tente novamente em alguns instantes.",
-                    anonimo=True
-                )
-
-            return retornar_chat_json()
 
         if acao == "mensagem":
             mensagem_texto = request.POST.get("mensagem", "").strip()
@@ -883,6 +836,7 @@ PEDIDO DO USUÁRIO:
                     status_link=status_link,
                     motivo_link=motivo_link
                 )
+                print("MENSAGEM CRIADA:", mensagem.id, mensagem.mensagem)
 
                 for arquivo in arquivos:
                     valido, erro = validar_anexo(arquivo)

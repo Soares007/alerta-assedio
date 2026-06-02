@@ -130,7 +130,6 @@ class MensagemChatDenuncia(models.Model):
     TIPOS_AUTOR = [
         ('funcionario', 'Funcionário'),
         ('rh', 'RH'),
-        ('ia', 'IA'),
         ('sistema', 'Sistema'),
     ]
 
