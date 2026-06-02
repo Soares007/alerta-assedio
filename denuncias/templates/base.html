@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Sistema de Denúncias</title>
+    <link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
     <style>
         * {
@@ -294,7 +296,11 @@
             {% endif %}
         {% else %}
             <a href="/login/">Entrar</a>
+            <a href="{% url 'password_reset' %}">
+    Esqueci minha senha
+</a>
         {% endif %}
+</a>
     </aside>
 
     <main>

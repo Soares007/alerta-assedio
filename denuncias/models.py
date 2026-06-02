@@ -11,6 +11,9 @@ class Setor(models.Model):
 class PerfilUsuario(models.Model):
     usuario = models.OneToOneField(User, on_delete=models.CASCADE)
     setor = models.ForeignKey(Setor, on_delete=models.SET_NULL, null=True, blank=True)
+    trocar_senha_primeiro_acesso = models.BooleanField(
+    default=True
+)
 
     def __str__(self):
         return self.usuario.username
