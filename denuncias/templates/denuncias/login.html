@@ -9,5 +9,8 @@
     {{ form.as_p }}
 
     <button type="submit">Entrar</button>
+    <a href="{% url 'password_reset' %}">
+    Esqueci minha senha
+</a>
 </form>
 {% endblock %}

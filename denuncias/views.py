@@ -22,10 +22,41 @@ from .ia.gemini_api import (
     gerar_resumo_com_fallback,
     analisar_link_com_fallback
 )
+from django.contrib.auth.views import PasswordResetView
 import re
 
 
-def criar_notificacao_usuario(usuario, titulo, mensagem, tipo="geral"):
+def criar_notificacao_usuario(usuario, titulo, mensagem, tipo="sistema"):
+    notificacao = Notificacao.objects.create(
+        usuario=usuario,
+        titulo=titulo,
+        mensagem=mensagem,
+    )
+    
+    if usuario.email:
+        enviar_email_html(
+            assunto=titulo,
+            mensagem_texto=mensagem,
+            mensagem_html=f"""
+                <div style="font-family: Arial, sans-serif; background:#f4f6f8; padding:30px;">
+                    <div style="max-width:600px; margin:auto; background:white; padding:25px; border-radius:12px;">
+                        <h2 style="color:#111827;">{titulo}</h2>
+
+                        <p style="color:#374151; line-height:1.6;">
+                            {mensagem}
+                        </p>
+
+                        <p style="margin-top:20px; color:#6b7280;">
+                            Acesse o sistema para visualizar mais detalhes.
+                        </p>
+                    </div>
+                </div>
+            """,
+            destinatarios=[usuario.email],
+        )
+        
+        return notificacao
+    
     if not usuario:
         return
 
@@ -303,22 +334,43 @@ def criar_denuncia(request):
                     assunto="Nova denúncia recebida",
                     mensagem_texto="Uma nova denúncia foi registrada no sistema.",
                     mensagem_html=f"""
-                        <div style="font-family: Arial, sans-serif; background:#f4f6f8; padding:30px;">
-                            <div style="max-width:600px; margin:auto; background:white; padding:25px; border-radius:12px;">
-                                <h2 style="color:#1f2937;">Nova denúncia recebida</h2>
+                        <div style="font-family:Arial,sans-serif;background:#f3f4f6;padding:30px;">
 
-                                <p>Uma nova denúncia foi registrada no sistema.</p>
+    <div style="max-width:700px;margin:auto;background:white;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08);">
 
-                                <p>
-                                    <strong>Tipo:</strong> {denuncia.get_tipo_display()}<br>
-                                    <strong>Anônima:</strong> {"Sim" if denuncia.anonima else "Não"}
-                                </p>
+        <div style="background:#111827;padding:24px;">
+            <h2 style="margin:0;color:white;">
+                Nova denúncia recebida
+            </h2>
+        </div>
 
-                                <p style="margin-top:20px;">
-                                    Acesse o painel do RH para analisar e responder.
-                                </p>
-                            </div>
-                        </div>
+        <div style="padding:30px;">
+
+            <div style="background:#f9fafb;border:1px solid #e5e7eb;padding:18px;border-radius:12px;margin-bottom:20px;">
+                <p><strong>ID:</strong> #{denuncia.id}</p>
+                <p><strong>Tipo:</strong> {denuncia.get_tipo_display()}</p>
+                <p><strong>Anônima:</strong> {"Sim" if denuncia.anonima else "Não"}</p>
+                <p><strong>Gravidade:</strong> {denuncia.get_gravidade_display()}</p>
+                <p><strong>Status:</strong> {denuncia.get_status_display()}</p>
+            </div>
+
+            <h3 style="color:#111827;">
+                Descrição da denúncia
+            </h3>
+
+            <div style="background:#fff;border-left:4px solid #2563eb;padding:18px;line-height:1.8;color:#374151;border-radius:8px;">
+                {denuncia.descricao}
+            </div>
+
+            <p style="margin-top:25px;color:#6b7280;">
+                Acesse o painel do RH para analisar a denúncia e responder ao colaborador.
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
                     """,
                     destinatarios=emails_rh,
                 )
@@ -929,3 +981,47 @@ def chat_denuncia(request, denuncia_id):
         "mensagens": mensagens,
         "eh_rh": eh_rh or eh_admin or eh_superuser,
     })
+    
+class PasswordResetHTMLView(PasswordResetView):
+    template_name = "auth/password_reset.html"
+    subject_template_name = "auth/password_reset_subject.txt"
+    email_template_name = "auth/password_reset_email.txt"
+    success_url = "/esqueci-senha/enviado/"
+
+    def send_mail(
+        self,
+        subject_template_name,
+        email_template_name,
+        context,
+        from_email,
+        to_email,
+        html_email_template_name=None
+    ):
+        subject = render_to_string(
+            subject_template_name,
+            context
+        ).strip()
+
+        body_text = render_to_string(
+            email_template_name,
+            context
+        )
+
+        body_html = render_to_string(
+            "auth/password_reset_email.html",
+            context
+        )
+
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=body_text,
+            from_email=from_email,
+            to=[to_email]
+        )
+
+        email.attach_alternative(
+            body_html,
+            "text/html"
+        )
+
+        email.send()

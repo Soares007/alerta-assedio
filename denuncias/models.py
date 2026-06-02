@@ -11,6 +11,9 @@ class Setor(models.Model):
 class PerfilUsuario(models.Model):
     usuario = models.OneToOneField(User, on_delete=models.CASCADE)
     setor = models.ForeignKey(Setor, on_delete=models.SET_NULL, null=True, blank=True)
+    trocar_senha_primeiro_acesso = models.BooleanField(
+    default=True
+)
 
     def __str__(self):
         return self.usuario.username
@@ -67,7 +70,7 @@ class Denuncia(models.Model):
 
 class AnexoDenuncia(models.Model):
     denuncia = models.ForeignKey(
-        Denuncia, on_delete=models.CASCADE, related_name="anexos"
+        Denuncia, on_delete=models.CASCADE, related_name="anexos", 
     )
     arquivo = models.FileField(upload_to="anexos_denuncias/", blank=True, null=True)
     link = models.URLField(blank=True, null=True)
