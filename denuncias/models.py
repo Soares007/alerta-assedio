@@ -67,7 +67,7 @@ class Denuncia(models.Model):
 
 class AnexoDenuncia(models.Model):
     denuncia = models.ForeignKey(
-        Denuncia, on_delete=models.CASCADE, related_name="anexos"
+        Denuncia, on_delete=models.CASCADE, related_name="anexos", 
     )
     arquivo = models.FileField(upload_to="anexos_denuncias/", blank=True, null=True)
     link = models.URLField(blank=True, null=True)
