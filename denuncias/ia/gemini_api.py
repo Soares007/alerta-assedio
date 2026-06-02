@@ -181,10 +181,10 @@ Retorne APENAS JSON válido:
 def responder_chat_local(contexto):
     contexto_lower = contexto.lower()
 
-    if "pedido do usuário:" in contexto_lower:
+    pedido = "geral"
+
+    if "pedido do usuário:" in contexto_lower and "conversa:" in contexto_lower:
         pedido = contexto_lower.split("pedido do usuário:")[1].split("conversa:")[0].strip()
-    else:
-        pedido = "geral"
 
     tipo = "não identificado"
     status = "não informado"
@@ -198,19 +198,22 @@ def responder_chat_local(contexto):
         if linha_limpa.startswith("Tipo:"):
             tipo = linha_limpa.replace("Tipo:", "").strip()
 
-        if linha_limpa.startswith("Status:"):
+        elif linha_limpa.startswith("Status:"):
             status = linha_limpa.replace("Status:", "").strip()
 
-        if linha_limpa.startswith("Gravidade:"):
+        elif linha_limpa.startswith("Gravidade:"):
             gravidade = linha_limpa.replace("Gravidade:", "").strip()
 
-        if linha_limpa.startswith("Resumo IA:"):
+        elif linha_limpa.startswith("Resumo IA:"):
             resumo = linha_limpa.replace("Resumo IA:", "").strip()
 
-        if linha_limpa.startswith("Descrição:"):
+        elif linha_limpa.startswith("Descrição:"):
             descricao = linha_limpa.replace("Descrição:", "").strip()
 
-    texto_base = resumo if resumo and resumo != "Sem resumo" else descricao
+    texto_base = resumo if resumo and resumo.lower() != "sem resumo" else descricao
+
+    if not texto_base:
+        texto_base = "não há informações suficientes no relato."
 
     mensagens = []
 
@@ -223,58 +226,56 @@ def responder_chat_local(contexto):
             capturando = True
             continue
 
-        if capturando and linha_limpa:
-            if not linha_limpa.startswith("["):
+        if capturando:
+            if linha_limpa and not linha_limpa.startswith("["):
                 mensagens.append(linha_limpa)
 
-    ultimas_mensagens = mensagens[-5:]
+    ultimas_mensagens = mensagens[-4:]
 
     if pedido == "resumir":
         if ultimas_mensagens:
             return (
-                f"Resumo da conversa: a denúncia #{tipo} está com status {status} "
-                f"e gravidade {gravidade}. O ponto principal relatado é: {texto_base}. "
-                f"Nas mensagens recentes, foram tratados estes pontos: {' '.join(ultimas_mensagens[:3])}"
+                f"Resumo da conversa: esta denúncia é do tipo {tipo}, "
+                f"está com status {status} e gravidade {gravidade}. "
+                f"O ponto principal registrado é: {texto_base}. "
+                f"Nas mensagens recentes, foram mencionados: {' '.join(ultimas_mensagens)}"
             )
 
         return (
-            f"Resumo da denúncia: trata-se de uma denúncia do tipo {tipo}, "
+            f"Resumo da denúncia: caso do tipo {tipo}, "
             f"com status {status} e gravidade {gravidade}. "
-            f"O relato principal é: {texto_base}"
+            f"Relato principal: {texto_base}"
         )
 
     if pedido == "explicar":
         return (
-            f"Esta denúncia foi classificada como {tipo}. "
-            f"Pelo conteúdo informado, o caso deve ser analisado considerando o relato principal: {texto_base}. "
-            f"A gravidade atual é {gravidade} e o status é {status}. "
-            f"A IA não substitui a análise do RH, mas pode ajudar a organizar as informações."
+            f"Explicação da denúncia: este caso foi identificado como {tipo}. "
+            f"Isso significa que o relato pode envolver uma situação relacionada a essa categoria. "
+            f"O conteúdo principal informado foi: {texto_base}. "
+            f"No momento, o status é {status} e a gravidade indicada é {gravidade}. "
+            f"A análise final deve ser feita pelo RH."
         )
 
     if pedido == "sugerir_resposta":
         return (
-            "Sugestão de resposta para o RH: "
-            "Olá, sua denúncia foi recebida e analisada com atenção. "
-            "As informações relatadas serão tratadas com sigilo e responsabilidade. "
-            "Caso existam novos detalhes, evidências ou dúvidas, você pode continuar utilizando este chat para complementar o acompanhamento."
+            "Sugestão de resposta do RH: Olá, sua denúncia foi recebida e analisada com atenção. "
+            "As informações relatadas serão tratadas com sigilo, responsabilidade e respeito. "
+            "Caso você tenha novas evidências, detalhes adicionais ou dúvidas sobre o acompanhamento, "
+            "pode continuar utilizando este chat para complementar as informações."
         )
 
     if pedido == "proximos_passos":
         return (
-            "Próximos passos sugeridos: revisar o relato com atenção, verificar se existem anexos ou links de apoio, "
-            "manter a comunicação pelo chat caso faltem informações e registrar qualquer nova evidência relevante. "
-            "Se houver risco imediato, o caso deve ser tratado com prioridade pelo RH."
+            "Próximos passos sugeridos: o RH deve revisar o relato, verificar anexos e links enviados, "
+            "avaliar a gravidade do caso e manter o acompanhamento pelo chat. "
+            "O funcionário pode complementar a denúncia com datas, nomes, testemunhas ou evidências, se existirem."
         )
-
-    if "link" in contexto_lower or "site" in contexto_lower:
-        return "Há menção a link ou site no contexto. Recomenda-se verificar o alerta de segurança exibido pelo sistema antes de abrir qualquer endereço."
 
     return (
         f"A denúncia está registrada como {tipo}, com status {status}. "
         f"O conteúdo principal informado foi: {texto_base}. "
-        f"O caso deve ser acompanhado com atenção pelo RH e pelas partes envolvidas."
+        f"O caso deve continuar sendo acompanhado pelo RH."
     )
-
     
 def responder_chat_local(contexto):
     contexto_lower = contexto.lower()
@@ -293,43 +294,4 @@ def responder_chat_local(contexto):
 
     return "A IA local pode ajudar a resumir a situação, esclarecer dúvidas gerais e orientar que o caso seja analisado com cuidado pelo RH."
 
-
-def responder_chat_com_fallback(contexto):
-    try:
-        print("TENTANDO USAR GEMINI NO CHAT...")
-
-        prompt = f"""
-Você é uma IA assistente de RH em um sistema de denúncias.
-
-Regras:
-- Não tome decisão final.
-- Não acuse ninguém.
-- Não substitua análise humana do RH.
-- Seja claro, respeitoso e objetivo.
-- Se faltar informação, diga que faltam detalhes.
-
-Contexto:
-{contexto}
-
-Retorne APENAS JSON válido:
-
-{{
-  "resposta": "texto da resposta da IA"
-}}
-"""
-
-        resultado = chamar_gemini(prompt)
-
-        print("IA USADA NO CHAT: GEMINI")
-
-        return resultado.get(
-            "resposta",
-            "Não consegui gerar uma resposta clara com as informações disponíveis."
-        )
-
-    except Exception as erro:
-        print("IA USADA NO CHAT: LOCAL")
-        print("ERRO GEMINI CHAT:", erro)
-
-        return responder_chat_local(contexto)
    

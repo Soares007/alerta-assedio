@@ -1,21 +1,7 @@
-<style>
-.chat-anexo img,
-.chat-anexo video,
-.chat-pdf-preview {
-    cursor: pointer;
-}
-
-.chat-pdf-preview {
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 18px;
-    font-weight: 700;
-    color: #374151;
-}
-</style>
 {% for m in mensagens %}
+
 <div class="msg msg-{{ m.tipo_autor }}">
+
     <div class="msg-avatar">
         {% if m.tipo_autor == 'rh' %}
             RH
@@ -29,6 +15,7 @@
     </div>
 
     <div class="msg-content">
+
         <div class="msg-autor">
             {% if m.tipo_autor == 'funcionario' %}
                 {% if m.anonimo %}
@@ -40,50 +27,94 @@
                 RH
             {% elif m.tipo_autor == 'ia' %}
                 IA Assistente
-            {% else %}
+            {% elif m.tipo_autor == 'sistema' %}
                 Sistema
+            {% else %}
+                Usuário
             {% endif %}
         </div>
 
         {% if m.mensagem %}
-            <div class="msg-texto">{{ m.mensagem }}</div>
+            <div class="msg-texto">
+                {{ m.mensagem }}
+            </div>
         {% endif %}
 
         {% if m.link_detectado %}
             <div class="link-security link-{{ m.status_link }}">
-                <strong>{{ m.get_status_link_display }}</strong>
+                <strong>
+                    {% if m.status_link %}
+                        {{ m.get_status_link_display }}
+                    {% else %}
+                        Link analisado
+                    {% endif %}
+                </strong>
+
                 <p>{{ m.motivo_link }}</p>
-                <a href="{{ m.link_detectado }}" target="_blank">Abrir link analisado</a>
+
+                <a href="{{ m.link_detectado }}" target="_blank">
+                    Abrir link analisado
+                </a>
             </div>
         {% endif %}
 
         {% for anexo in m.anexos.all %}
             <div class="chat-anexo">
-                {% with url=anexo.arquivo.url|lower original=anexo.arquivo.url %}
-                    {% if ".jpg" in url or ".jpeg" in url or ".png" in url or ".webp" in url or ".gif" in url %}
-                        <img src="{{ original }}" alt="Anexo" onclick="abrirMediaModal('imagem', '{{ original }}')">
-                    {% elif ".mp4" in url or ".webm" in url or ".ogg" in url %}
-                        <video onclick="abrirMediaModal('video', '{{ original }}')">
-    <source src="{{ original }}">
-</video>
-                    {% elif ".mp3" in url or ".wav" in url %}
-                        <audio controls>
-                            <source src="{{ original }}">
-                        </audio>
-                    {% elif ".pdf" in url %}
-                        <div class="chat-pdf-preview" onclick="abrirMediaModal('pdf', '{{ original }}')">
-    📄 Abrir PDF em tela cheia
-</div>
-                    {% else %}
-                        <a href="{{ original }}" target="_blank">Abrir anexo</a>
-                    {% endif %}
-                {% endwith %}
+
+                {% if anexo.arquivo %}
+
+                    {% with url=anexo.arquivo.url|lower original=anexo.arquivo.url %}
+
+                        {% if ".jpg" in url or ".jpeg" in url or ".png" in url or ".webp" in url or ".gif" in url %}
+                            <img
+                                src="{{ original }}"
+                                alt="Anexo"
+                                onclick="abrirMediaModal('imagem', '{{ original }}')"
+                            >
+
+                        {% elif ".mp4" in url or ".webm" in url or ".ogg" in url %}
+                            <video onclick="abrirMediaModal('video', '{{ original }}')">
+                                <source src="{{ original }}">
+                            </video>
+
+                        {% elif ".mp3" in url or ".wav" in url %}
+                            <audio controls>
+                                <source src="{{ original }}">
+                            </audio>
+
+                        {% elif ".pdf" in url %}
+                            <div
+                                class="chat-pdf-preview"
+                                onclick="abrirMediaModal('pdf', '{{ original }}')"
+                            >
+                                📄 Abrir PDF
+                            </div>
+
+                        {% else %}
+                            <a href="{{ original }}" target="_blank">
+                                Abrir anexo
+                            </a>
+                        {% endif %}
+
+                    {% endwith %}
+
+                {% endif %}
+
             </div>
         {% endfor %}
 
-        <div class="msg-data">{{ m.criado_em|date:"d/m/Y H:i" }}</div>
+        <div class="msg-data">
+            {{ m.criado_em|date:"d/m/Y H:i" }}
+        </div>
+
     </div>
+
 </div>
+
 {% empty %}
-<p class="chat-empty">Nenhuma mensagem ainda.</p>
+
+<p class="chat-empty">
+    Nenhuma mensagem ainda.
+</p>
+
 {% endfor %}

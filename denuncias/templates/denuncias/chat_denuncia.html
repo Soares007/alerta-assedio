@@ -693,10 +693,6 @@
     display: none;
 }
 
-.ia-action {
-    background: #f5f3ff;
-    color: #7c3aed;
-}
 
 .send-btn {
     width: 44px;
@@ -714,42 +710,6 @@
     justify-content: center;
 }
 
-.ia-options-grid {
-    display: grid;
-    gap: 12px;
-    padding: 22px;
-}
-
-.ia-options-grid button {
-    text-align: left;
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 16px;
-    padding: 15px;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.ia-options-grid button:hover {
-    background: #f5f3ff;
-    border-color: #c4b5fd;
-    transform: translateY(-2px);
-}
-
-.ia-options-grid strong {
-    display: block;
-    color: #111827;
-    margin-bottom: 5px;
-}
-
-.ia-options-grid span {
-    color: #6b7280;
-    font-size: 13px;
-}
-
-.ia-modal-box {
-    max-width: 560px;
-}
 </style>
 
 <div class="chat-page">
@@ -836,6 +796,8 @@
             {% csrf_token %}
            <div class="chat-input-area">
 
+            <input type="hidden" name="acao" value="mensagem">
+
     <div id="previewArquivosChat" class="preview-arquivos-chat"></div>
 
     <div class="chat-compose">
@@ -855,15 +817,6 @@
             id="mensagemChat"
             placeholder="Digite sua mensagem..."
         ></textarea>
-
-        <button
-            type="button"
-            class="chat-action-btn ia-action"
-            onclick="abrirModalIA()"
-            title="Assistente IA"
-        >
-            ✨
-        </button>
 
         <button type="submit" class="send-btn">
             ➤
@@ -913,42 +866,6 @@
     </div>
 </div>
 {% endif %}
-
-<div class="modal-bg" id="modalIA">
-    <div class="modal-box ia-modal-box">
-        <h3>Assistente IA</h3>
-
-        <div class="ia-options-grid">
-            <button type="button" onclick="chamarIAChat('resumir')">
-                <strong>Resumir conversa</strong>
-                <span>Gerar um resumo do histórico do chat.</span>
-            </button>
-
-            <button type="button" onclick="chamarIAChat('explicar')">
-                <strong>Explicar denúncia</strong>
-                <span>Explicar o contexto de forma simples.</span>
-            </button>
-
-            {% if eh_rh %}
-            <button type="button" onclick="chamarIAChat('sugerir_resposta')">
-                <strong>Sugerir resposta</strong>
-                <span>Ajudar o RH a escrever uma resposta profissional.</span>
-            </button>
-            {% endif %}
-
-            <button type="button" onclick="chamarIAChat('proximos_passos')">
-                <strong>Próximos passos</strong>
-                <span>Sugerir ações cuidadosas para acompanhamento.</span>
-            </button>
-        </div>
-
-        <div class="modal-actions">
-            <button type="button" class="btn-chat btn-cancelar" onclick="fecharModalIA()">
-                Fechar
-            </button>
-        </div>
-    </div>
-</div>
 
 <div class="media-modal" id="mediaModal">
     <div class="media-modal-content">
@@ -1145,69 +1062,54 @@
         }
 
         if (chatForm) {
-            chatForm.addEventListener('submit', function (e) {
-                e.preventDefault();
+    chatForm.addEventListener('submit', function (e) {
+        e.preventDefault();
 
-                const formData = new FormData(chatForm);
+        const mensagemValor = mensagemChat ? mensagemChat.value.trim() : '';
+        const temArquivos = arquivoChat && arquivoChat.files.length > 0;
 
-                fetch(window.location.href, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        chatForm.reset();
-                        arquivosSelecionadosChat = [];
+        if (!mensagemValor && !temArquivos) {
+            return;
+        }
 
-                        if (previewArquivosChat) {
-                            previewArquivosChat.style.display = 'none';
-                            previewArquivosChat.innerHTML = '';
-                        }
+        const formData = new FormData(chatForm);
 
-                        chatMensagens.innerHTML = data.html;
-                        scrollChatFinal();
-                    });
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro ao enviar mensagem');
+                }
+
+                return response.json();
+            })
+
+            .then(data => {
+                chatForm.reset();
+                arquivosSelecionadosChat = [];
+
+                if (previewArquivosChat) {
+                    previewArquivosChat.style.display = 'none';
+                    previewArquivosChat.innerHTML = '';
+                }
+
+                if (chatMensagens && data.html) {
+                    chatMensagens.innerHTML = data.html;
+                    scrollChatFinal();
+                }
+            })
+
+            .catch(error => {
+                console.error('Erro no envio do chat:', error);
+                alert('Erro ao enviar mensagem. Verifique o console.');
             });
-        }
-
-        window.abrirModalIA = function () {
-    document.getElementById('modalIA').classList.add('active');
-};
-
-window.fecharModalIA = function () {
-    document.getElementById('modalIA').classList.remove('active');
-};
-
-window.chamarIAChat = function(tipoPedido) {
-    fecharModalIA();
-
-    const formData = new FormData();
-    formData.append('acao', 'ia');
-    formData.append('tipo_pedido', tipoPedido);
-
-    fetch(window.location.href, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        chatMensagens.innerHTML = data.html;
-        scrollChatFinal();
-    })
-    .catch(error => {
-        console.error(error);
-        alert('Não foi possível chamar a IA agora.');
     });
-};
-
-       
+}    
 
         window.abrirModalResposta = function () {
             document.getElementById('modalResposta').classList.add('active');
@@ -1218,22 +1120,16 @@ window.chamarIAChat = function(tipoPedido) {
         };
 
         document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') {
-                fecharMediaModal();
+    if (e.key === 'Escape') {
+        fecharMediaModal();
 
-                const modalResposta = document.getElementById('modalResposta');
+        const modalResposta = document.getElementById('modalResposta');
 
-                if (modalResposta) {
-                    modalResposta.classList.remove('active');
-                }
-            }
-
-            const modalIA = document.getElementById('modalIA');
-
-if (modalIA) {
-    modalIA.classList.remove('active');
-}
-        });
+        if (modalResposta) {
+            modalResposta.classList.remove('active');
+        }
+    }
+});
 
         setInterval(atualizarChat, 4000);
 
