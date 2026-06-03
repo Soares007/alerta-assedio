@@ -1,0 +1,442 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+    .func-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .func-header h2 {
+        color: #111827;
+        margin-bottom: 4px;
+    }
+
+    .func-header p {
+        color: #6b7280;
+    }
+
+    .btn-primary {
+        background: #2563eb;
+        color: white;
+        padding: 10px 14px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 700;
+        display: inline-block;
+    }
+
+    .func-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+    }
+
+    .func-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .func-table th {
+        background: #f9fafb;
+        color: #374151;
+        text-align: left;
+        padding: 14px;
+        font-size: 13px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .func-table td {
+        padding: 14px;
+        border-bottom: 1px solid #f3f4f6;
+        color: #111827;
+        vertical-align: middle;
+    }
+
+    .func-user {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .func-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 999px;
+        background: #eff6ff;
+        color: #2563eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+    }
+
+    .status {
+        padding: 5px 9px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .status-ativo {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-inativo {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .acoes {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .btn-small {
+        padding: 7px 10px;
+        border-radius: 9px;
+        font-size: 12px;
+        text-decoration: none;
+        font-weight: 700;
+        background: #f3f4f6;
+        color: #374151;
+    }
+
+    .btn-small:hover {
+        background: #e5e7eb;
+    }
+
+    .empty-box {
+        padding: 30px;
+        text-align: center;
+        color: #6b7280;
+    }
+
+    @media (max-width: 800px) {
+        .func-card {
+            overflow-x: auto;
+        }
+
+        .func-table {
+            min-width: 760px;
+        }
+    }
+
+    .func-filtros-modern {
+    display: grid;
+    grid-template-columns: 1.7fr 1fr 1fr auto;
+    gap: 12px;
+    margin-bottom: 12px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f9fafb;
+    border: 1px solid #d1d5db;
+    border-radius: 14px;
+    padding: 0 12px;
+}
+
+.search-box input {
+    border: none;
+    background: transparent;
+    outline: none;
+    width: 100%;
+    padding: 12px 0;
+}
+
+.func-filtros-modern select {
+    border: 1px solid #d1d5db;
+    border-radius: 14px;
+    padding: 12px;
+    background: #f9fafb;
+}
+
+.func-filtros-modern button {
+    border: none;
+    border-radius: 14px;
+    padding: 12px 16px;
+    background: #111827;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.contador-funcionarios {
+    color: #6b7280;
+    font-size: 14px;
+    margin-bottom: 16px;
+}
+
+@media (max-width: 900px) {
+    .func-filtros-modern {
+        grid-template-columns: 1fr;
+    }
+}
+
+.func-actions-top {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-primary,
+.btn-importar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 15px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 800;
+}
+
+.btn-primary {
+    background: #2563eb;
+    color: white;
+}
+
+.btn-importar {
+    background: #111827;
+    color: white;
+}
+</style>
+
+<div class="func-header">
+    <div>
+        <h2>Funcionários</h2>
+        <p>Gerencie usuários cadastrados pelo RH.</p>
+    </div>
+
+    <div class="func-actions-top">
+    <a href="{% url 'cadastrar_funcionario' %}" class="btn-primary">
+        <span>＋</span>
+        Novo funcionário
+    </a>
+
+    <a href="{% url 'importar_funcionarios' %}" class="btn-importar">
+        <span>☁</span>
+        Importar Funcionários
+    </a>
+</div>
+</div>
+
+<div class="func-filtros-modern">
+    <div class="search-box">
+        <span>🔎</span>
+        <input
+            type="text"
+            id="buscaFuncionario"
+            placeholder="Pesquisar por nome, usuário ou e-mail..."
+        >
+    </div>
+
+    <select id="filtroSetor">
+        <option value="">Todos os setores</option>
+        {% for setor in setores %}
+            <option value="{{ setor.nome|lower }}">{{ setor.nome }}</option>
+        {% endfor %}
+    </select>
+
+    <select id="filtroStatus">
+        <option value="">Todos os status</option>
+        <option value="ativo">Ativos</option>
+        <option value="bloqueado">Bloqueados</option>
+    </select>
+
+    <button type="button" id="limparFiltros">
+        Limpar
+    </button>
+</div>
+
+<div class="contador-funcionarios">
+    Exibindo <strong id="totalVisivel">0</strong> funcionário(s)
+</div>
+
+<div class="func-card">
+    {% if funcionarios %}
+        <table class="func-table">
+            <thead>
+                <tr>
+                    <th>Funcionário</th>
+                    <th>E-mail</th>
+                    <th>Setor</th>
+                    <th>Status</th>
+                    <th>Primeiro acesso</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for funcionario in funcionarios %}
+                    <tr  class="linha-funcionario"
+    data-nome="{{ funcionario.first_name|default:funcionario.username|lower }}"
+    data-usuario="{{ funcionario.username|lower }}"
+    data-email="{{ funcionario.email|lower }}"
+    data-setor="{% if funcionario.perfilusuario.setor %}{{ funcionario.perfilusuario.setor.nome|lower }}{% endif %}"
+    data-status="{% if funcionario.is_active %}ativo{% else %}bloqueado{% endif %}">
+                        <td>
+                            <div class="func-user">
+                                <div class="func-avatar">
+                                    {{ funcionario.first_name|default:funcionario.username|first|upper }}
+                                </div>
+
+                                <div>
+                                    <strong>
+                                        {{ funcionario.first_name|default:funcionario.username }}
+                                    </strong>
+                                    <br>
+                                    <small>@{{ funcionario.username }}</small>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td>{{ funcionario.email }}</td>
+
+                        <td>
+                            {% if funcionario.perfilusuario.setor %}
+                                {{ funcionario.perfilusuario.setor.nome }}
+                            {% else %}
+                                Não informado
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if funcionario.is_active %}
+                                <span class="status status-ativo">Ativo</span>
+                            {% else %}
+                                <span class="status status-inativo">Bloqueado</span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if funcionario.perfilusuario.trocar_senha_primeiro_acesso %}
+                                Sim
+                            {% else %}
+                                Não
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <div class="acoes">
+                               <a
+    href="{% url 'editar_funcionario' funcionario.id %}"
+    class="btn-small"
+>
+    Editar
+</a>
+
+<a
+    href="{% url 'resetar_senha_funcionario' funcionario.id %}"
+    class="btn-small"
+    onclick="return confirm('Deseja gerar uma nova senha temporária para este funcionário?')"
+>
+    Resetar senha
+</a>
+
+<a
+    href="{% url 'resetar_senha_funcionario' funcionario.id %}"
+    class="btn-small"
+    onclick="return confirm('Deseja reenviar o acesso para este funcionário? Uma nova senha será gerada.')"
+>
+    Reenviar acesso
+</a>
+
+<a
+    href="{% url 'alternar_status_funcionario' funcionario.id %}"
+    class="btn-small"
+    onclick="return confirm('Deseja alterar o status deste funcionário?')"
+>
+    {% if funcionario.is_active %}
+        Bloquear
+    {% else %}
+        Desbloquear
+    {% endif %}
+</a>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-box">
+            Nenhum funcionário cadastrado ainda.
+        </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const busca = document.getElementById('buscaFuncionario');
+    const filtroSetor = document.getElementById('filtroSetor');
+    const filtroStatus = document.getElementById('filtroStatus');
+    const limpar = document.getElementById('limparFiltros');
+    const totalVisivel = document.getElementById('totalVisivel');
+    const linhas = document.querySelectorAll('.linha-funcionario');
+
+    function aplicarFiltros() {
+        const termo = busca.value.toLowerCase().trim();
+        const setor = filtroSetor.value;
+        const status = filtroStatus.value;
+
+        let total = 0;
+
+        linhas.forEach(linha => {
+            const nome = linha.dataset.nome || '';
+            const usuario = linha.dataset.usuario || '';
+            const email = linha.dataset.email || '';
+            const setorLinha = linha.dataset.setor || '';
+            const statusLinha = linha.dataset.status || '';
+
+            const bateBusca =
+                nome.includes(termo) ||
+                usuario.includes(termo) ||
+                email.includes(termo);
+
+            const bateSetor = !setor || setorLinha === setor;
+            const bateStatus = !status || statusLinha === status;
+
+            if (bateBusca && bateSetor && bateStatus) {
+                linha.style.display = '';
+                total++;
+            } else {
+                linha.style.display = 'none';
+            }
+        });
+
+        totalVisivel.textContent = total;
+    }
+
+    busca.addEventListener('input', aplicarFiltros);
+    filtroSetor.addEventListener('change', aplicarFiltros);
+    filtroStatus.addEventListener('change', aplicarFiltros);
+
+    limpar.addEventListener('click', function () {
+        busca.value = '';
+        filtroSetor.value = '';
+        filtroStatus.value = '';
+        aplicarFiltros();
+    });
+
+    aplicarFiltros();
+});
+</script>
+
+{% endblock %}

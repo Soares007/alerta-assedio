@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+    .edit-card {
+        max-width: 620px;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 20px;
+        padding: 24px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+    }
+
+    .edit-card h2 {
+        margin-bottom: 6px;
+        color: #111827;
+    }
+
+    .edit-card p {
+        color: #6b7280;
+        margin-bottom: 20px;
+    }
+
+    .edit-card label {
+        display: block;
+        font-weight: 700;
+        color: #374151;
+        margin-bottom: 6px;
+    }
+
+    .edit-card input,
+    .edit-card select {
+        width: 100%;
+        border: 1px solid #d1d5db;
+        border-radius: 12px;
+        padding: 11px;
+        margin-bottom: 16px;
+    }
+
+    .edit-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .btn-save {
+        background: #2563eb;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .btn-cancel {
+        background: #f3f4f6;
+        color: #374151;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .checkbox-line {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .checkbox-line input {
+        width: auto;
+        margin: 0;
+    }
+</style>
+
+<div class="edit-card">
+    <h2>Editar funcionário</h2>
+    <p>Atualize os dados cadastrais do funcionário.</p>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <label>Nome completo</label>
+        {{ form.nome }}
+
+        <label>E-mail</label>
+        {{ form.email }}
+
+        <label>Setor</label>
+        {{ form.setor }}
+
+        <label class="checkbox-line">
+            {{ form.ativo }}
+            Usuário ativo
+        </label>
+
+        <div class="edit-actions">
+            <button type="submit" class="btn-save">
+                Salvar alterações
+            </button>
+
+            <a href="{% url 'funcionarios' %}" class="btn-cancel">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

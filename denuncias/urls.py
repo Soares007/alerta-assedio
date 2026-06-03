@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import home, criar_denuncia, limpar_notificacoes, sucesso, minhas_denuncias, dashboard, denuncias_arquivadas, painel_rh, marcar_notificacoes_lidas, api_notificacoes, alterar_status_denuncia, analisar_relato, feedback_ia, arquivar_denuncia, chat_denuncia
+from .views import alternar_status_funcionario, editar_funcionario, funcionarios, home, criar_denuncia, importar_funcionarios, limpar_notificacoes, resetar_senha_funcionario, sucesso, minhas_denuncias, dashboard, denuncias_arquivadas, painel_rh, marcar_notificacoes_lidas, api_notificacoes, alterar_status_denuncia, analisar_relato, feedback_ia, arquivar_denuncia, chat_denuncia, cadastrar_funcionario, trocar_senha_primeiro_acesso
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -20,6 +20,14 @@ urlpatterns = [
     path('feedback-ia/', feedback_ia, name='feedback_ia'),
     path("arquivar-denuncia/<int:denuncia_id>/", arquivar_denuncia, name="arquivar_denuncia"),
     path("chat-denuncia/<int:denuncia_id>/", chat_denuncia, name="chat_denuncia"),
+    path("funcionarios/cadastrar/", cadastrar_funcionario, name="cadastrar_funcionario"),
+    path( "funcionarios/", funcionarios, name="funcionarios"),
+    path("funcionarios/<int:user_id>/resetar-senha/", resetar_senha_funcionario, name="resetar_senha_funcionario"),
+    path("funcionarios/<int:user_id>/status/", alternar_status_funcionario, name="alternar_status_funcionario"),
+    path("funcionarios/<int:user_id>/editar/", editar_funcionario, name="editar_funcionario"),
+    path("funcionarios/importar/", importar_funcionarios, name="importar_funcionarios"),
+    path("primeiro-acesso/trocar-senha/", trocar_senha_primeiro_acesso, name="trocar_senha_primeiro_acesso"
+),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

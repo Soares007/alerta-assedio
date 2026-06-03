@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-
+from django.utils import timezone
 
 class Setor(models.Model):
     nome = models.CharField(max_length=100)
@@ -9,15 +9,32 @@ class Setor(models.Model):
         return self.nome
     
 class PerfilUsuario(models.Model):
-    usuario = models.OneToOneField(User, on_delete=models.CASCADE)
-    setor = models.ForeignKey(Setor, on_delete=models.SET_NULL, null=True, blank=True)
+    usuario = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE
+    )
+
+    setor = models.ForeignKey(
+        Setor,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
     trocar_senha_primeiro_acesso = models.BooleanField(
-    default=True
-)
+        default=False
+    )
+
+    criado_pelo_rh = models.BooleanField(
+        default=False
+    )
+
+    data_criacao = models.DateTimeField(
+        default=timezone.now
+    )
 
     def __str__(self):
         return self.usuario.username
-
 
 class Denuncia(models.Model):
     TIPOS = [

@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from .forms import DenunciaForm, RespostaDenunciaForm, FeedbackIA
-from .models import Denuncia, Notificacao,  AnexoDenuncia, PerfilUsuario,  ChatDenuncia, MensagemChatDenuncia, AnexoMensagemChat
+from .forms import DenunciaForm, RespostaDenunciaForm, FeedbackIA, EditarFuncionarioForm, CadastroFuncionarioForm
+from .models import Denuncia, Notificacao,  AnexoDenuncia, PerfilUsuario,  ChatDenuncia, MensagemChatDenuncia, AnexoMensagemChat, Setor
 from django.contrib import messages
 from django.http import JsonResponse
 from django.core.mail import EmailMultiAlternatives
@@ -24,6 +24,15 @@ from .ia.gemini_api import (
 )
 from django.contrib.auth.views import PasswordResetView
 import re
+from django.contrib.auth.models import User, Group
+from .forms import CadastroFuncionarioForm
+import secrets
+import string
+from django.db.models import Q
+import openpyxl
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
+
 
 
 def criar_notificacao_usuario(usuario, titulo, mensagem, tipo="sistema"):
@@ -1025,3 +1034,455 @@ class PasswordResetHTMLView(PasswordResetView):
         )
 
         email.send()
+        
+def gerar_senha_temporaria(tamanho=10):
+    caracteres = string.ascii_letters + string.digits + "!@#$%&*"
+    return "".join(secrets.choice(caracteres) for _ in range(tamanho))
+
+
+
+@login_required
+def cadastrar_funcionario(request):
+    eh_rh = request.user.groups.filter(name="RH").exists()
+    eh_admin = request.user.groups.filter(name="Administrador").exists()
+
+    if not (eh_rh or eh_admin or request.user.is_superuser):
+        return redirect("home")
+
+    if request.method == "POST":
+        form = CadastroFuncionarioForm(request.POST)
+
+        if form.is_valid():
+            nome = form.cleaned_data["nome"]
+            email = form.cleaned_data["email"]
+            setor = form.cleaned_data["setor"]
+
+            if User.objects.filter(email=email).exists():
+                messages.error(request, "Já existe um usuário com este e-mail.")
+                return redirect("cadastrar_funcionario")
+
+            senha_temporaria = gerar_senha_temporaria()
+
+            usuario = User.objects.create_user(
+                username=email,
+                email=email,
+                password=senha_temporaria,
+                first_name=nome
+            )
+
+            grupo_funcionario, criado = Group.objects.get_or_create(
+                name="Funcionário"
+            )
+
+            usuario.groups.add(grupo_funcionario)
+
+            perfil, criado = PerfilUsuario.objects.get_or_create(
+                usuario=usuario
+            )
+
+            perfil.setor = setor
+            perfil.trocar_senha_primeiro_acesso = True
+            perfil.criado_pelo_rh = True
+            perfil.save()
+
+            enviar_email_html(
+                assunto="Seu acesso ao Sistema de Denúncias foi criado",
+                mensagem_texto=f"""
+Olá {nome},
+
+Seu acesso ao Sistema de Denúncias foi criado.
+
+Usuário: {email}
+Senha temporária: {senha_temporaria}
+
+No primeiro acesso, será solicitado que você altere sua senha.
+                """,
+                mensagem_html=f"""
+<div style="font-family:Arial,sans-serif;background:#f3f4f6;padding:30px;">
+    <div style="max-width:650px;margin:auto;background:white;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08);">
+        <div style="background:#111827;padding:24px;">
+            <h2 style="color:white;margin:0;">Sistema de Denúncias</h2>
+        </div>
+
+        <div style="padding:30px;">
+            <h2 style="color:#111827;">Seu acesso foi criado</h2>
+
+            <p style="color:#374151;line-height:1.7;">
+                Olá, {nome}. Seu acesso ao Sistema de Denúncias foi criado pelo RH.
+            </p>
+
+            <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:14px;padding:18px;margin:20px 0;">
+                <p><strong>Usuário:</strong> {email}</p>
+                <p><strong>Senha temporária:</strong> {senha_temporaria}</p>
+            </div>
+
+            <p style="color:#6b7280;line-height:1.6;">
+                No primeiro acesso, será solicitado que você altere sua senha.
+            </p>
+        </div>
+    </div>
+</div>
+                """,
+                destinatarios=[email],
+            )
+
+            messages.success(request, "Funcionário cadastrado e acesso enviado por e-mail.")
+            return redirect("cadastrar_funcionario")
+
+    else:
+        form = CadastroFuncionarioForm()
+
+    return render(request, "denuncias/cadastrar_funcionario.html", {
+        "form": form
+    })
+    
+@login_required
+def funcionarios(request):
+    eh_rh = request.user.groups.filter(name="RH").exists()
+    eh_admin = request.user.groups.filter(name="Administrador").exists()
+
+    if not (eh_rh or eh_admin or request.user.is_superuser):
+        return redirect("home")
+
+    busca = request.GET.get("busca", "").strip()
+    setor_id = request.GET.get("setor", "").strip()
+    status = request.GET.get("status", "").strip()
+
+    funcionarios_lista = User.objects.filter(
+        groups__name="Funcionário"
+    ).select_related(
+        "perfilusuario",
+        "perfilusuario__setor"
+    ).order_by("first_name", "username")
+
+    if busca:
+        funcionarios_lista = funcionarios_lista.filter(
+            Q(first_name__icontains=busca) |
+            Q(username__icontains=busca) |
+            Q(email__icontains=busca)
+        )
+
+    if setor_id:
+        funcionarios_lista = funcionarios_lista.filter(
+            perfilusuario__setor_id=setor_id
+        )
+
+    if status == "ativo":
+        funcionarios_lista = funcionarios_lista.filter(is_active=True)
+
+    elif status == "bloqueado":
+        funcionarios_lista = funcionarios_lista.filter(is_active=False)
+
+    setores = Setor.objects.all().order_by("nome")
+
+    return render(request, "denuncias/funcionarios.html", {
+        "funcionarios": funcionarios_lista,
+        "setores": setores,
+        "busca": busca,
+        "setor_id": setor_id,
+        "status": status,
+    })
+    
+@login_required
+def resetar_senha_funcionario(request, user_id):
+    eh_rh = request.user.groups.filter(name="RH").exists()
+    eh_admin = request.user.groups.filter(name="Administrador").exists()
+
+    if not (eh_rh or eh_admin or request.user.is_superuser):
+        return redirect("home")
+
+    funcionario = User.objects.get(id=user_id)
+    senha_temporaria = gerar_senha_temporaria()
+
+    funcionario.set_password(senha_temporaria)
+    funcionario.save()
+
+    perfil, criado = PerfilUsuario.objects.get_or_create(usuario=funcionario)
+    perfil.trocar_senha_primeiro_acesso = True
+    perfil.save()
+
+    enviar_email_html(
+        assunto="Nova senha temporária - Sistema de Denúncias",
+        mensagem_texto=f"""
+Olá {funcionario.first_name or funcionario.username},
+
+Uma nova senha temporária foi gerada para sua conta.
+
+Usuário: {funcionario.username}
+Senha temporária: {senha_temporaria}
+
+No próximo acesso, altere sua senha.
+        """,
+        mensagem_html=f"""
+<div style="font-family:Arial,sans-serif;background:#f3f4f6;padding:30px;">
+    <div style="max-width:650px;margin:auto;background:white;border-radius:18px;overflow:hidden;">
+        <div style="background:#111827;padding:24px;">
+            <h2 style="color:white;margin:0;">Sistema de Denúncias</h2>
+        </div>
+
+        <div style="padding:30px;">
+            <h2>Nova senha temporária</h2>
+
+            <p>Olá, {funcionario.first_name or funcionario.username}.</p>
+
+            <p>Uma nova senha temporária foi gerada para sua conta.</p>
+
+            <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:14px;padding:18px;margin:20px 0;">
+                <p><strong>Usuário:</strong> {funcionario.username}</p>
+                <p><strong>Senha temporária:</strong> {senha_temporaria}</p>
+            </div>
+
+            <p>No próximo acesso, será solicitado que você altere sua senha.</p>
+        </div>
+    </div>
+</div>
+        """,
+        destinatarios=[funcionario.email],
+    )
+
+    messages.success(request, "Senha resetada e enviada por e-mail.")
+    return redirect("funcionarios")
+
+
+@login_required
+def alternar_status_funcionario(request, user_id):
+    eh_rh = request.user.groups.filter(name="RH").exists()
+    eh_admin = request.user.groups.filter(name="Administrador").exists()
+
+    if not (eh_rh or eh_admin or request.user.is_superuser):
+        return redirect("home")
+
+    funcionario = User.objects.get(id=user_id)
+
+    if funcionario == request.user:
+        messages.error(request, "Você não pode bloquear seu próprio usuário.")
+        return redirect("funcionarios")
+
+    funcionario.is_active = not funcionario.is_active
+    funcionario.save()
+
+    if funcionario.is_active:
+        messages.success(request, "Funcionário desbloqueado com sucesso.")
+    else:
+        messages.success(request, "Funcionário bloqueado com sucesso.")
+
+    return redirect("funcionarios")
+
+@login_required
+def editar_funcionario(request, user_id):
+    eh_rh = request.user.groups.filter(name="RH").exists()
+    eh_admin = request.user.groups.filter(name="Administrador").exists()
+
+    if not (eh_rh or eh_admin or request.user.is_superuser):
+        return redirect("home")
+
+    funcionario = User.objects.get(id=user_id)
+    perfil, criado = PerfilUsuario.objects.get_or_create(
+        usuario=funcionario
+    )
+
+    if request.method == "POST":
+        form = EditarFuncionarioForm(request.POST)
+
+        if form.is_valid():
+            nome = form.cleaned_data["nome"]
+            email = form.cleaned_data["email"]
+            setor = form.cleaned_data["setor"]
+            ativo = form.cleaned_data["ativo"]
+
+            email_ja_existe = User.objects.filter(
+                email=email
+            ).exclude(
+                id=funcionario.id
+            ).exists()
+
+            if email_ja_existe:
+                messages.error(request, "Já existe outro usuário com este e-mail.")
+                return redirect("editar_funcionario", user_id=funcionario.id)
+
+            funcionario.first_name = nome
+            funcionario.email = email
+            funcionario.username = email
+            funcionario.is_active = ativo
+            funcionario.save()
+
+            perfil.setor = setor
+            perfil.save()
+
+            messages.success(request, "Funcionário atualizado com sucesso.")
+            return redirect("funcionarios")
+
+    else:
+        form = EditarFuncionarioForm(initial={
+            "nome": funcionario.first_name,
+            "email": funcionario.email,
+            "setor": perfil.setor,
+            "ativo": funcionario.is_active,
+        })
+
+    return render(request, "denuncias/editar_funcionario.html", {
+        "form": form,
+        "funcionario": funcionario,
+    })
+    
+@login_required
+def importar_funcionarios(request):
+    eh_rh = request.user.groups.filter(name="RH").exists()
+    eh_admin = request.user.groups.filter(name="Administrador").exists()
+
+    if not (eh_rh or eh_admin or request.user.is_superuser):
+        return redirect("home")
+
+    resultados = []
+
+    if request.method == "POST":
+        arquivo = request.FILES.get("arquivo")
+
+        if not arquivo:
+            messages.error(request, "Envie uma planilha .xlsx.")
+            return redirect("importar_funcionarios")
+
+        if not arquivo.name.endswith(".xlsx"):
+            messages.error(request, "O arquivo precisa ser .xlsx.")
+            return redirect("importar_funcionarios")
+
+        planilha = openpyxl.load_workbook(arquivo)
+        aba = planilha.active
+
+        grupo_funcionario, criado = Group.objects.get_or_create(
+            name="Funcionário"
+        )
+
+        for indice, linha in enumerate(aba.iter_rows(min_row=2, values_only=True), start=2):
+            nome, email, setor_nome = linha[0], linha[1], linha[2]
+
+            if not nome or not email:
+                resultados.append({
+                    "linha": indice,
+                    "status": "erro",
+                    "mensagem": "Nome ou e-mail vazio."
+                })
+                continue
+
+            email = str(email).strip().lower()
+            nome = str(nome).strip()
+            setor_nome = str(setor_nome).strip() if setor_nome else ""
+
+            if User.objects.filter(email=email).exists():
+                resultados.append({
+                    "linha": indice,
+                    "status": "erro",
+                    "mensagem": f"E-mail já cadastrado: {email}"
+                })
+                continue
+
+            setor = None
+
+            if setor_nome:
+                setor, criado = Setor.objects.get_or_create(
+                    nome=setor_nome
+                )
+
+            senha_temporaria = gerar_senha_temporaria()
+
+            usuario = User.objects.create_user(
+                username=email,
+                email=email,
+                password=senha_temporaria,
+                first_name=nome
+            )
+
+            usuario.groups.add(grupo_funcionario)
+
+            perfil, criado = PerfilUsuario.objects.get_or_create(
+                usuario=usuario
+            )
+
+            perfil.setor = setor
+            perfil.trocar_senha_primeiro_acesso = True
+            perfil.criado_pelo_rh = True
+            perfil.save()
+
+            enviar_email_html(
+                assunto="Seu acesso ao Sistema de Denúncias foi criado",
+                mensagem_texto=f"""
+Olá {nome},
+
+Seu acesso ao Sistema de Denúncias foi criado.
+
+Usuário: {email}
+Senha temporária: {senha_temporaria}
+
+No primeiro acesso, será solicitado que você altere sua senha.
+                """,
+                mensagem_html=f"""
+<div style="font-family:Arial,sans-serif;background:#f3f4f6;padding:30px;">
+    <div style="max-width:650px;margin:auto;background:white;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.08);">
+        <div style="background:#111827;padding:24px;">
+            <h2 style="color:white;margin:0;">Sistema de Denúncias</h2>
+        </div>
+
+        <div style="padding:30px;">
+            <h2 style="color:#111827;">Seu acesso foi criado</h2>
+
+            <p style="color:#374151;line-height:1.7;">
+                Olá, {nome}. Seu acesso ao Sistema de Denúncias foi criado pelo RH.
+            </p>
+
+            <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:14px;padding:18px;margin:20px 0;">
+                <p><strong>Usuário:</strong> {email}</p>
+                <p><strong>Senha temporária:</strong> {senha_temporaria}</p>
+            </div>
+
+            <p style="color:#6b7280;line-height:1.6;">
+                No primeiro acesso, será solicitado que você altere sua senha.
+            </p>
+        </div>
+    </div>
+</div>
+                """,
+                destinatarios=[email],
+            )
+
+            resultados.append({
+                "linha": indice,
+                "status": "sucesso",
+                "mensagem": f"Funcionário criado: {nome} ({email})"
+            })
+
+        messages.success(request, "Importação concluída.")
+
+    return render(request, "denuncias/importar_funcionarios.html", {
+        "resultados": resultados
+    })
+    
+@login_required
+def trocar_senha_primeiro_acesso(request):
+    perfil = PerfilUsuario.objects.filter(usuario=request.user).first()
+
+    if not perfil:
+        return redirect("home")
+
+    if not perfil.trocar_senha_primeiro_acesso:
+        return redirect("home")
+
+    if request.method == "POST":
+        form = PasswordChangeForm(request.user, request.POST)
+
+        if form.is_valid():
+            usuario = form.save()
+
+            perfil.trocar_senha_primeiro_acesso = False
+            perfil.save()
+
+            update_session_auth_hash(request, usuario)
+
+            messages.success(request, "Senha alterada com sucesso.")
+            return redirect("home")
+
+    else:
+        form = PasswordChangeForm(request.user)
+
+    return render(request, "denuncias/trocar_senha_primeiro_acesso.html", {
+        "form": form
+    })
