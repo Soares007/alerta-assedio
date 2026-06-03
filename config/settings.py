@@ -66,6 +66,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "denuncias.middleware.TrocaSenhaPrimeiroAcessoMiddleware",
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -84,6 +85,11 @@ TEMPLATES = [
             ],
         },
     },
+]
+
+AUTHENTICATION_BACKENDS = [
+    "denuncias.backends.EmailOuUsernameBackend",
+    "django.contrib.auth.backends.ModelBackend",
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'

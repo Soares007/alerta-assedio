@@ -1,5 +1,5 @@
 from django import forms
-from .models import Denuncia
+from .models import Denuncia, Setor
 
 class MultipleFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
@@ -51,3 +51,41 @@ class FeedbackIAForm(forms.ModelForm):
     class Meta:
         model = FeedbackIA
         fields = ['tipo_correto']
+        
+class CadastroFuncionarioForm(forms.Form):
+    nome = forms.CharField(
+        label="Nome completo",
+        max_length=150
+    )
+
+    email = forms.EmailField(
+        label="E-mail"
+    )
+
+    setor = forms.ModelChoiceField(
+        label="Setor",
+        queryset=Setor.objects.all(),
+        required=False
+    )
+    
+class EditarFuncionarioForm(forms.Form):
+    nome = forms.CharField(
+        label="Nome completo",
+        max_length=150
+    )
+
+    email = forms.EmailField(
+        label="E-mail"
+    )
+
+    setor = forms.ModelChoiceField(
+        label="Setor",
+        queryset=Setor.objects.all(),
+        required=False
+    )
+
+    ativo = forms.BooleanField(
+        label="Usuário ativo",
+        required=False
+    )
+    
