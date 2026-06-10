@@ -14,6 +14,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 import os
+import dj_database_url
 
 load_dotenv()
 
@@ -41,7 +42,11 @@ SECRET_KEY = 'django-insecure-n6njw^!z2lx&c6ou+0t17f+o9ryd^(n)9zhw-)-enl)=xe=3sl
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "localhost",
+    ".onrender.com",
+]
 
 
 # Application definition
@@ -99,10 +104,10 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    "default": dj_database_url.config(
+        default=os.getenv("DATABASE_URL", "sqlite:///db.sqlite3"),
+        conn_max_age=600,
+    )
 }
 
 
@@ -146,7 +151,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    # resto dos middlewares...
+]
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 DEFAULT_FROM_EMAIL = 'sistema@denuncias.com'
@@ -154,3 +166,4 @@ ASGI_APPLICATION = 'config.asgi.application'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 PASSWORD_RESET_TIMEOUT = 1800
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
