@@ -40,11 +40,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-n6njw^!z2lx&c6ou+0t17f+o9ryd^(n)9zhw-)-enl)=xe=3sl'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [
     "127.0.0.1",
-    "localhost",
+    "localhost", 
+    "sistema-denuncias-3vts.onrender.com",
     ".onrender.com",
 ]
 
@@ -164,3 +165,7 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 PASSWORD_RESET_TIMEOUT = 1800
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://sistema-denuncias-3vts.onrender.com",
+]
